@@ -1,0 +1,4 @@
+app:
+  jwt:
+    secret: test-only-jwt-signing-secret-not-for-production-use-please-1234567890
+    expiration-ms: 3600000
