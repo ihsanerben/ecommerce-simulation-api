@@ -51,6 +51,12 @@ class CategoryControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void getCategoryById_whenIdIsNotANumber_returns400() throws Exception {
+        mockMvc.perform(get("/api/categories/not-a-number"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void createCategory_withoutAuthentication_isForbidden() throws Exception {
         CategoryRequest request = new CategoryRequest("Electronics", "Gadgets");
 
