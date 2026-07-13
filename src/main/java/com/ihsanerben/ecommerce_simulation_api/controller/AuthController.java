@@ -19,26 +19,26 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Kullanıcı kaydı ve giriş işlemleri")
+@Tag(name = "Authentication", description = "User registration and login operations")
 public class AuthController {
 
     private final AuthService authService;
 
     @PostMapping("/register")
-    @Operation(summary = "Yeni kullanıcı kaydı", description = "USER rolüyle bir hesap oluşturur ve bir JWT token döner.")
-    @ApiResponse(responseCode = "201", description = "Kayıt başarılı")
-    @ApiResponse(responseCode = "400", description = "Doğrulama hatası")
-    @ApiResponse(responseCode = "409", description = "Kullanıcı adı veya e-posta zaten kayıtlı")
+    @Operation(summary = "Register a new user", description = "Creates an account with the USER role and returns a JWT token.")
+    @ApiResponse(responseCode = "201", description = "Registration successful")
+    @ApiResponse(responseCode = "400", description = "Validation error")
+    @ApiResponse(responseCode = "409", description = "Username or email already registered")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Giriş yap", description = "Kullanıcı adı ve şifre ile giriş yapar, bir JWT token döner.")
-    @ApiResponse(responseCode = "200", description = "Giriş başarılı")
-    @ApiResponse(responseCode = "400", description = "Doğrulama hatası")
-    @ApiResponse(responseCode = "401", description = "Kullanıcı adı veya şifre hatalı")
+    @Operation(summary = "Log in", description = "Logs in with a username and password, and returns a JWT token.")
+    @ApiResponse(responseCode = "200", description = "Login successful")
+    @ApiResponse(responseCode = "400", description = "Validation error")
+    @ApiResponse(responseCode = "401", description = "Incorrect username or password")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }

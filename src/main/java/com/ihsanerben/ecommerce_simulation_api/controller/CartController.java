@@ -26,25 +26,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
-@Tag(name = "Cart", description = "Giriş yapmış kullanıcının kendi sepeti")
+@Tag(name = "Cart", description = "The logged-in user's own cart")
 @SecurityRequirement(name = "bearerAuth")
 public class CartController {
 
     private final CartService cartService;
 
     @GetMapping
-    @Operation(summary = "Sepeti getir", description = "Kullanıcının sepeti yoksa otomatik olarak boş bir sepet oluşturulur.")
-    @ApiResponse(responseCode = "200", description = "Sepet")
+    @Operation(summary = "Get the cart", description = "If the user has no cart, an empty one is created automatically.")
+    @ApiResponse(responseCode = "200", description = "Cart")
     public ResponseEntity<CartResponse> getCart(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(cartService.getCart(principal.getId()));
     }
 
     @PostMapping("/items")
-    @Operation(summary = "Sepete ürün ekle", description = "Ürün zaten sepetteyse miktar toplanır.")
-    @ApiResponse(responseCode = "201", description = "Ürün sepete eklendi")
-    @ApiResponse(responseCode = "400", description = "Doğrulama hatası")
-    @ApiResponse(responseCode = "404", description = "Ürün bulunamadı")
-    @ApiResponse(responseCode = "409", description = "Yetersiz stok")
+    @Operation(summary = "Add a product to the cart", description = "If the product is already in the cart, the quantity is added up.")
+    @ApiResponse(responseCode = "201", description = "Product added to the cart")
+    @ApiResponse(responseCode = "400", description = "Validation error")
+    @ApiResponse(responseCode = "404", description = "Product not found")
+    @ApiResponse(responseCode = "409", description = "Insufficient stock")
     public ResponseEntity<CartResponse> addItem(
             @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody AddCartItemRequest request) {
         CartResponse response = cartService.addItem(principal.getId(), request);
@@ -52,11 +52,11 @@ public class CartController {
     }
 
     @PutMapping("/items/{itemId}")
-    @Operation(summary = "Sepetteki ürün adedini güncelle")
-    @ApiResponse(responseCode = "200", description = "Adet güncellendi")
-    @ApiResponse(responseCode = "400", description = "Doğrulama hatası")
-    @ApiResponse(responseCode = "404", description = "Sepet kalemi bulunamadı (veya size ait değil)")
-    @ApiResponse(responseCode = "409", description = "Yetersiz stok")
+    @Operation(summary = "Update the quantity of a cart item")
+    @ApiResponse(responseCode = "200", description = "Quantity updated")
+    @ApiResponse(responseCode = "400", description = "Validation error")
+    @ApiResponse(responseCode = "404", description = "Cart item not found (or does not belong to you)")
+    @ApiResponse(responseCode = "409", description = "Insufficient stock")
     public ResponseEntity<CartResponse> updateItemQuantity(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long itemId,
@@ -65,9 +65,9 @@ public class CartController {
     }
 
     @DeleteMapping("/items/{itemId}")
-    @Operation(summary = "Sepetten ürün çıkar")
-    @ApiResponse(responseCode = "204", description = "Ürün sepetten çıkarıldı")
-    @ApiResponse(responseCode = "404", description = "Sepet kalemi bulunamadı (veya size ait değil)")
+    @Operation(summary = "Remove a product from the cart")
+    @ApiResponse(responseCode = "204", description = "Product removed from the cart")
+    @ApiResponse(responseCode = "404", description = "Cart item not found (or does not belong to you)")
     public ResponseEntity<Void> removeItem(
             @AuthenticationPrincipal UserPrincipal principal, @PathVariable Long itemId) {
         cartService.removeItem(principal.getId(), itemId);
@@ -75,8 +75,8 @@ public class CartController {
     }
 
     @DeleteMapping
-    @Operation(summary = "Sepeti tamamen boşalt")
-    @ApiResponse(responseCode = "204", description = "Sepet boşaltıldı")
+    @Operation(summary = "Empty the cart completely")
+    @ApiResponse(responseCode = "204", description = "Cart emptied")
     public ResponseEntity<Void> clearCart(@AuthenticationPrincipal UserPrincipal principal) {
         cartService.clearCart(principal.getId());
         return ResponseEntity.noContent().build();

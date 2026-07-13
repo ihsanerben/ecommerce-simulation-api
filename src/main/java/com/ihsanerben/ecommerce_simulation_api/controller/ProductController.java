@@ -29,17 +29,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
-@Tag(name = "Products", description = "Ürün yönetimi — okuma herkese açık, yazma sadece ADMIN")
+@Tag(name = "Products", description = "Product management — reading is public, writing is ADMIN only")
 public class ProductController {
 
     private final ProductService productService;
 
     @GetMapping
-    @Operation(summary = "Ürünleri listele", description = "Sayfalama, kategoriye göre filtreleme ve isme göre arama destekler.")
-    @ApiResponse(responseCode = "200", description = "Sayfalanmış ürün listesi")
+    @Operation(summary = "List products", description = "Supports pagination, filtering by category, and searching by name.")
+    @ApiResponse(responseCode = "200", description = "Paginated product list")
     public ResponseEntity<PagedModel<ProductResponse>> getProducts(
-            @Parameter(description = "Kategoriye göre filtrele") @RequestParam(required = false) Long categoryId,
-            @Parameter(description = "Ürün adına göre ara (büyük/küçük harf duyarsız)") @RequestParam(required = false) String search,
+            @Parameter(description = "Filter by category") @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "Search by product name (case-insensitive)") @RequestParam(required = false) String search,
             Pageable pageable
     ) {
         Page<ProductResponse> page = productService.searchProducts(categoryId, search, pageable);
@@ -47,9 +47,9 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Ürün detayı")
-    @ApiResponse(responseCode = "200", description = "Ürün bulundu")
-    @ApiResponse(responseCode = "404", description = "Ürün bulunamadı")
+    @Operation(summary = "Product details")
+    @ApiResponse(responseCode = "200", description = "Product found")
+    @ApiResponse(responseCode = "404", description = "Product not found")
     public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
@@ -57,11 +57,11 @@ public class ProductController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Ürün ekle", description = "Sadece ADMIN")
-    @ApiResponse(responseCode = "201", description = "Ürün oluşturuldu")
-    @ApiResponse(responseCode = "400", description = "Doğrulama hatası")
-    @ApiResponse(responseCode = "403", description = "ADMIN yetkisi gerekli")
-    @ApiResponse(responseCode = "404", description = "Kategori bulunamadı")
+    @Operation(summary = "Add a product", description = "ADMIN only")
+    @ApiResponse(responseCode = "201", description = "Product created")
+    @ApiResponse(responseCode = "400", description = "Validation error")
+    @ApiResponse(responseCode = "403", description = "ADMIN role required")
+    @ApiResponse(responseCode = "404", description = "Category not found")
     public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
         ProductResponse response = productService.createProduct(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -70,11 +70,11 @@ public class ProductController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Ürün güncelle", description = "Sadece ADMIN")
-    @ApiResponse(responseCode = "200", description = "Ürün güncellendi")
-    @ApiResponse(responseCode = "400", description = "Doğrulama hatası")
-    @ApiResponse(responseCode = "403", description = "ADMIN yetkisi gerekli")
-    @ApiResponse(responseCode = "404", description = "Ürün veya kategori bulunamadı")
+    @Operation(summary = "Update a product", description = "ADMIN only")
+    @ApiResponse(responseCode = "200", description = "Product updated")
+    @ApiResponse(responseCode = "400", description = "Validation error")
+    @ApiResponse(responseCode = "403", description = "ADMIN role required")
+    @ApiResponse(responseCode = "404", description = "Product or category not found")
     public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id, @Valid @RequestBody ProductRequest request) {
         return ResponseEntity.ok(productService.updateProduct(id, request));
@@ -83,10 +83,10 @@ public class ProductController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Ürün sil", description = "Sadece ADMIN")
-    @ApiResponse(responseCode = "204", description = "Ürün silindi")
-    @ApiResponse(responseCode = "403", description = "ADMIN yetkisi gerekli")
-    @ApiResponse(responseCode = "404", description = "Ürün bulunamadı")
+    @Operation(summary = "Delete a product", description = "ADMIN only")
+    @ApiResponse(responseCode = "204", description = "Product deleted")
+    @ApiResponse(responseCode = "403", description = "ADMIN role required")
+    @ApiResponse(responseCode = "404", description = "Product not found")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();

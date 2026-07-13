@@ -9,8 +9,8 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
         info = @Info(
                 title = "E-Commerce Simulation API",
                 version = "1.0",
-                description = "Katmanlı mimari, JWT tabanlı kimlik doğrulama ve "
-                        + "transactional sipariş akışı ile geliştirilmiş bir e-ticaret simülasyon API'si."
+                description = "An e-commerce simulation API built with a layered architecture, "
+                        + "JWT-based authentication, and a transactional order checkout flow."
         )
 )
 @SecurityScheme(
@@ -18,7 +18,7 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
         type = SecuritySchemeType.HTTP,
         scheme = "bearer",
         bearerFormat = "JWT",
-        description = "POST /api/auth/login ile aldığınız token'ı buraya 'Bearer <token>' önekiyle yapıştırmanıza gerek yok, sadece token'ın kendisini girin."
+        description = "You don't need to prefix the token you get from POST /api/auth/login with 'Bearer <token>' here, just enter the token itself."
 )
 public class OpenApiConfig {
 }
