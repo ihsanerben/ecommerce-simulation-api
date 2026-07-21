@@ -1,64 +1,74 @@
 package com.ihsanerben.ecommerce_simulation_api.service;
 
-import com.ihsanerben.ecommerce_simulation_api.dto.request.LoginRequest;
-import com.ihsanerben.ecommerce_simulation_api.dto.request.RegisterRequest;
+import com.ihsanerben.ecommerce_simulation_api.dto.request.*;
 import com.ihsanerben.ecommerce_simulation_api.dto.response.AuthResponse;
-import com.ihsanerben.ecommerce_simulation_api.entity.Role;
-import com.ihsanerben.ecommerce_simulation_api.entity.User;
-import com.ihsanerben.ecommerce_simulation_api.exception.DuplicateResourceException;
-import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
+import com.ihsanerben.ecommerce_simulation_api.entity.*;
+import com.ihsanerben.ecommerce_simulation_api.exception.*;
+import com.ihsanerben.ecommerce_simulation_api.repository.*;
 import com.ihsanerben.ecommerce_simulation_api.security.JwtService;
-import com.ihsanerben.ecommerce_simulation_api.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final SessionService sessionService;
+    private final PasswordHistoryRepository passwordHistoryRepository;
     private final JwtService jwtService;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.username())) {
+    public AuthResult register(RegisterRequest request, String userAgent, String ipAddress) {
+        if (userRepository.existsByUsername(request.username()))
             throw new DuplicateResourceException("User", "username", request.username());
-        }
-        if (userRepository.existsByEmail(request.email())) {
+        if (userRepository.existsByEmail(request.email()))
             throw new DuplicateResourceException("User", "email", request.email());
-        }
 
-        User user = User.builder()
-                .username(request.username())
-                .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
-                .role(Role.USER)
-                .createdAt(LocalDateTime.now())
-                .build();
-
+        String hash = passwordEncoder.encode(request.password());
+        User user = User.builder().username(request.username()).email(request.email()).password(hash)
+                .role(Role.USER).tokenVersion(0).createdAt(LocalDateTime.now()).build();
         userRepository.save(user);
-
-        String token = jwtService.generateToken(new UserPrincipal(user));
-        return new AuthResponse(token, user.getUsername(), user.getRole());
+        passwordHistoryRepository.save(PasswordHistory.builder().user(user).passwordHash(hash)
+                .createdAt(LocalDateTime.now()).build());
+        return result(user, sessionService.create(user, userAgent, ipAddress));
     }
 
-    public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
-
+    @Transactional
+    public AuthResult login(LoginRequest request, String userAgent, String ipAddress) {
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.username(), request.password()));
         User user = userRepository.findByUsername(request.username())
-                .orElseThrow(() -> new IllegalStateException(
-                        "Authenticated user could not be reloaded: '%s'".formatted(request.username())));
+                .orElseThrow(() -> new IllegalStateException("Authenticated user could not be reloaded."));
+        return result(user, sessionService.create(user, userAgent, ipAddress));
+    }
 
-        String token = jwtService.generateToken(new UserPrincipal(user));
-        return new AuthResponse(token, user.getUsername(), user.getRole());
+    @Transactional
+    public AuthResult refresh(String refreshToken, String userAgent, String ipAddress) {
+        AuthTokens tokens = sessionService.rotate(refreshToken, userAgent, ipAddress);
+        User user = userRepository.findByUsername(jwtService.extractUsername(tokens.accessToken()))
+                .orElseThrow(() -> new InvalidTokenException("Token user no longer exists."));
+        return result(user, tokens);
+    }
+
+    @Transactional
+    public void logout(String refreshToken, String accessToken) {
+        sessionService.logout(refreshToken, accessToken);
+    }
+
+    @Transactional
+    public void logoutAll(Long userId, String accessToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        sessionService.logoutAll(user, accessToken);
+    }
+
+    private AuthResult result(User user, AuthTokens tokens) {
+        return new AuthResult(new AuthResponse(user.getUsername(), user.getRole()), tokens);
     }
 }

@@ -1,6 +1,5 @@
 package com.ihsanerben.ecommerce_simulation_api.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ihsanerben.ecommerce_simulation_api.AbstractIntegrationTest;
 import com.ihsanerben.ecommerce_simulation_api.dto.request.AddCartItemRequest;
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import com.ihsanerben.ecommerce_simulation_api.security.TokenCookieService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -63,13 +63,11 @@ class CartControllerIT extends AbstractIntegrationTest {
 
     private String registerAndGetToken(String username) throws Exception {
         RegisterRequest request = new RegisterRequest(username, username + "@example.com", "password123");
-        String body = mockMvc.perform(post("/api/auth/register")
+        return mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        JsonNode json = objectMapper.readTree(body);
-        return json.get("token").asText();
+                .andReturn().getResponse().getCookie(TokenCookieService.ACCESS_COOKIE).getValue();
     }
 
     private Product saveProduct(String name, int stock) {
@@ -87,9 +85,9 @@ class CartControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void getCart_withoutAuthentication_isForbidden() throws Exception {
+    void getCart_withoutAuthentication_isUnauthorized() throws Exception {
         mockMvc.perform(get("/api/cart"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

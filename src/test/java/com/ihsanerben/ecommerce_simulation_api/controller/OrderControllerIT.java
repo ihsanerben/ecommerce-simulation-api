@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import com.ihsanerben.ecommerce_simulation_api.security.TokenCookieService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -70,12 +71,11 @@ class OrderControllerIT extends AbstractIntegrationTest {
 
     private String registerAndGetToken(String username) throws Exception {
         RegisterRequest request = new RegisterRequest(username, username + "@example.com", "password123");
-        String body = mockMvc.perform(post("/api/auth/register")
+        return mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return objectMapper.readTree(body).get("token").asText();
+                .andReturn().getResponse().getCookie(TokenCookieService.ACCESS_COOKIE).getValue();
     }
 
     private void promoteToAdmin(String username) {
@@ -107,9 +107,9 @@ class OrderControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void checkout_withoutAuthentication_isForbidden() throws Exception {
+    void checkout_withoutAuthentication_isUnauthorized() throws Exception {
         mockMvc.perform(post("/api/orders"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -271,11 +271,10 @@ class OrderControllerIT extends AbstractIntegrationTest {
     }
 
     private String loginAndGetToken(String username) throws Exception {
-        String body = mockMvc.perform(post("/api/auth/login")
+        return mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"%s\",\"password\":\"password123\"}".formatted(username)))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return objectMapper.readTree(body).get("token").asText();
+                .andReturn().getResponse().getCookie(TokenCookieService.ACCESS_COOKIE).getValue();
     }
 }

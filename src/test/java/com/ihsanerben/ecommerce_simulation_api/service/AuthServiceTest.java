@@ -1,134 +1,77 @@
 package com.ihsanerben.ecommerce_simulation_api.service;
 
-import com.ihsanerben.ecommerce_simulation_api.dto.request.LoginRequest;
-import com.ihsanerben.ecommerce_simulation_api.dto.request.RegisterRequest;
-import com.ihsanerben.ecommerce_simulation_api.dto.response.AuthResponse;
-import com.ihsanerben.ecommerce_simulation_api.entity.Role;
-import com.ihsanerben.ecommerce_simulation_api.entity.User;
+import com.ihsanerben.ecommerce_simulation_api.dto.request.*;
+import com.ihsanerben.ecommerce_simulation_api.entity.*;
 import com.ihsanerben.ecommerce_simulation_api.exception.DuplicateResourceException;
-import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
+import com.ihsanerben.ecommerce_simulation_api.repository.*;
 import com.ihsanerben.ecommerce_simulation_api.security.JwtService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import java.time.LocalDateTime;
 import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
+    @Mock UserRepository userRepository;
+    @Mock PasswordEncoder passwordEncoder;
+    @Mock AuthenticationManager authenticationManager;
+    @Mock SessionService sessionService;
+    @Mock PasswordHistoryRepository historyRepository;
+    @Mock JwtService jwtService;
+    AuthService service;
 
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
-    private AuthenticationManager authenticationManager;
-
-    @Mock
-    private JwtService jwtService;
-
-    private AuthService authService;
-
-    @BeforeEach
-    void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, authenticationManager, jwtService);
+    @BeforeEach void setUp() {
+        service = new AuthService(userRepository, passwordEncoder, authenticationManager,
+                sessionService, historyRepository, jwtService);
     }
 
-    @Test
-    void register_whenUsernameAlreadyTaken_throwsDuplicateResourceException() {
-        RegisterRequest request = new RegisterRequest("ihsan", "ihsan@example.com", "password123");
+    @Test void register_whenUsernameExists_throwsConflict() {
         given(userRepository.existsByUsername("ihsan")).willReturn(true);
-
-        assertThatThrownBy(() -> authService.register(request))
-                .isInstanceOf(DuplicateResourceException.class)
-                .hasMessageContaining("username");
-
+        assertThatThrownBy(() -> service.register(request(), null, null))
+                .isInstanceOf(DuplicateResourceException.class).hasMessageContaining("username");
         verify(userRepository, never()).save(any());
     }
 
-    @Test
-    void register_whenEmailAlreadyTaken_throwsDuplicateResourceException() {
-        RegisterRequest request = new RegisterRequest("ihsan", "ihsan@example.com", "password123");
-        given(userRepository.existsByUsername("ihsan")).willReturn(false);
+    @Test void register_whenEmailExists_throwsConflict() {
         given(userRepository.existsByEmail("ihsan@example.com")).willReturn(true);
-
-        assertThatThrownBy(() -> authService.register(request))
-                .isInstanceOf(DuplicateResourceException.class)
-                .hasMessageContaining("email");
-
-        verify(userRepository, never()).save(any());
+        assertThatThrownBy(() -> service.register(request(), null, null))
+                .isInstanceOf(DuplicateResourceException.class).hasMessageContaining("email");
     }
 
-    @Test
-    void register_whenRequestIsValid_savesUserAndReturnsAuthResponse() {
-        RegisterRequest request = new RegisterRequest("ihsan", "ihsan@example.com", "password123");
-        given(userRepository.existsByUsername("ihsan")).willReturn(false);
-        given(userRepository.existsByEmail("ihsan@example.com")).willReturn(false);
-        given(passwordEncoder.encode("password123")).willReturn("hashed-password");
-        given(jwtService.generateToken(any())).willReturn("fake-jwt-token");
-
-        AuthResponse response = authService.register(request);
-
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-        User savedUser = userCaptor.getValue();
-
-        assertThat(savedUser.getUsername()).isEqualTo("ihsan");
-        assertThat(savedUser.getEmail()).isEqualTo("ihsan@example.com");
-        assertThat(savedUser.getPassword()).isEqualTo("hashed-password");
-        assertThat(savedUser.getRole()).isEqualTo(Role.USER);
-
-        assertThat(response.token()).isEqualTo("fake-jwt-token");
-        assertThat(response.username()).isEqualTo("ihsan");
-        assertThat(response.role()).isEqualTo(Role.USER);
+    @Test void register_savesPasswordHistoryAndReturnsTokensOutsideResponseBody() {
+        given(passwordEncoder.encode("password123")).willReturn("hash");
+        given(sessionService.create(any(), any(), any())).willReturn(new AuthTokens("access", "refresh"));
+        AuthResult result = service.register(request(), "agent", "127.0.0.1");
+        verify(userRepository).save(any(User.class));
+        verify(historyRepository).save(any(PasswordHistory.class));
+        assertThat(result.response().username()).isEqualTo("ihsan");
+        assertThat(result.tokens().accessToken()).isEqualTo("access");
     }
 
-    @Test
-    void login_whenCredentialsAreValid_returnsAuthResponse() {
-        LoginRequest request = new LoginRequest("ihsan", "password123");
-        User user = User.builder()
-                .id(1L)
-                .username("ihsan")
-                .email("ihsan@example.com")
-                .password("hashed-password")
-                .role(Role.USER)
-                .createdAt(LocalDateTime.now())
-                .build();
-
+    @Test void login_withValidCredentials_createsServerSideSession() {
+        User user = user();
         given(userRepository.findByUsername("ihsan")).willReturn(Optional.of(user));
-        given(jwtService.generateToken(any())).willReturn("fake-jwt-token");
-
-        AuthResponse response = authService.login(request);
-
-        assertThat(response.token()).isEqualTo("fake-jwt-token");
-        assertThat(response.username()).isEqualTo("ihsan");
+        given(sessionService.create(user, "agent", "ip")).willReturn(new AuthTokens("access", "refresh"));
+        AuthResult result = service.login(new LoginRequest("ihsan", "password123"), "agent", "ip");
+        verify(authenticationManager).authenticate(any());
+        assertThat(result.response().role()).isEqualTo(Role.USER);
     }
 
-    @Test
-    void login_whenCredentialsAreInvalid_propagatesBadCredentialsException() {
-        LoginRequest request = new LoginRequest("ihsan", "wrong-password");
-        given(authenticationManager.authenticate(any())).willThrow(new BadCredentialsException("Bad credentials"));
-
-        assertThatThrownBy(() -> authService.login(request))
+    @Test void login_withInvalidCredentials_propagatesUnauthorized() {
+        doThrow(new BadCredentialsException("bad")).when(authenticationManager).authenticate(any());
+        assertThatThrownBy(() -> service.login(new LoginRequest("ihsan", "bad"), null, null))
                 .isInstanceOf(BadCredentialsException.class);
-
-        verify(userRepository, never()).findByUsername(anyString());
     }
+
+    private RegisterRequest request() { return new RegisterRequest("ihsan", "ihsan@example.com", "password123"); }
+    private User user() { return User.builder().id(1L).username("ihsan").email("ihsan@example.com")
+            .password("hash").role(Role.USER).tokenVersion(0).createdAt(LocalDateTime.now()).build(); }
 }

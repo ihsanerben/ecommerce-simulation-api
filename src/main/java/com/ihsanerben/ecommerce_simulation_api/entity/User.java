@@ -42,6 +42,10 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer tokenVersion = 0;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 }

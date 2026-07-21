@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
+import org.springframework.data.web.PageableDefault;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,7 +42,7 @@ public class ProductController {
     public ResponseEntity<PagedModel<ProductResponse>> getProducts(
             @Parameter(description = "Filter by category") @RequestParam(required = false) Long categoryId,
             @Parameter(description = "Search by product name (case-insensitive)") @RequestParam(required = false) String search,
-            Pageable pageable
+            @ParameterObject @PageableDefault(size = 20, sort = "id") Pageable pageable
     ) {
         Page<ProductResponse> page = productService.searchProducts(categoryId, search, pageable);
         return ResponseEntity.ok(new PagedModel<>(page));

@@ -57,13 +57,13 @@ class CategoryControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void createCategory_withoutAuthentication_isForbidden() throws Exception {
+    void createCategory_withoutAuthentication_isUnauthorized() throws Exception {
         CategoryRequest request = new CategoryRequest("Electronics", "Gadgets");
 
         mockMvc.perform(post("/api/categories")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
