@@ -76,6 +76,21 @@ JWT "Authorize" button):
 http://localhost:8080/swagger-ui/index.html
 ```
 
+### Running the authentication UI
+
+With the API running on port `8080`, start the small React test UI:
+
+```bash
+cd ../ecommerce-simulation-web
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`. The UI covers register, login, logout, forgot/reset
+password, change password, and current-user status. To use a different API URL,
+copy `../ecommerce-simulation-web/.env.example` to
+`../ecommerce-simulation-web/.env` and change `VITE_API_URL`.
+
 ## Running the tests
 
 ```bash
@@ -105,6 +120,8 @@ All endpoints are under `/api`. Full request/response schemas are in Swagger UI.
 | POST | `/api/auth/logout-all` | Revoke all sessions for the user |
 | POST | `/api/auth/forgot-password` | Send a password reset email |
 | POST | `/api/auth/reset-password` | Reset password; last 3 passwords cannot be reused |
+| GET | `/api/auth/me` | Return the current authenticated user |
+| POST | `/api/auth/change-password` | Change password and revoke every session |
 
 Authentication tokens are returned as `HttpOnly` cookies, never in the JSON body.
 The access token is short-lived; the refresh token is rotated on every refresh and

@@ -53,6 +53,7 @@ public class OrderService {
         Order order = Order.builder()
                 .user(user)
                 .status(OrderStatus.PENDING)
+                .approved(false)
                 .totalAmount(BigDecimal.ZERO)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -95,6 +96,18 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         order.setStatus(newStatus);
+        return orderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse approveOrder(Long userId, Long orderId) {
+        Order order = findOwnedOrderOrThrow(userId, orderId);
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new InvalidOrderStateException("A cancelled order cannot be approved.");
+        }
+
+        order.setApproved(true);
         return orderMapper.toResponse(order);
     }
 

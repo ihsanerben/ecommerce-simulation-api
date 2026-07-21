@@ -97,6 +97,28 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Get the currently authenticated user")
+    public ResponseEntity<AuthResponse> me(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(new AuthResponse(principal.getUsername(), principal.getRole()));
+    }
+
+    @PostMapping("/change-password")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Change password", description = "Verifies the current password, rejects the last three passwords, revokes every session, and clears authentication cookies.")
+    @ApiResponse(responseCode = "200", description = "Password changed; all sessions revoked")
+    @ApiResponse(responseCode = "400", description = "Validation error or malformed request")
+    @ApiResponse(responseCode = "401", description = "Authentication is missing or current password is incorrect")
+    @ApiResponse(responseCode = "409", description = "New password matches one of the last three passwords")
+    public ResponseEntity<MessageResponse> changePassword(@AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ChangePasswordRequest request, HttpServletRequest httpRequest,
+            HttpServletResponse response) {
+        authService.changePassword(principal.getId(), request, accessToken(httpRequest));
+        cookieService.clear(response);
+        return ResponseEntity.ok(new MessageResponse("Password has been changed. Please log in again."));
+    }
+
     @PostMapping("/forgot-password")
     @Operation(summary = "Request a password reset email", description = "Always returns the same response to prevent account enumeration. Gmail SMTP must be configured to send the email.")
     @ApiResponse(responseCode = "200", description = "Password reset request accepted")

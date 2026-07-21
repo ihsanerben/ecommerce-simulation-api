@@ -131,6 +131,7 @@ class OrderControllerIT extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.approved").value(false))
                 .andExpect(jsonPath("$.totalAmount").value(1040.0))
                 .andExpect(jsonPath("$.items.length()").value(2));
 
@@ -196,6 +197,38 @@ class OrderControllerIT extends AbstractIntegrationTest {
         Long orderId = objectMapper.readTree(orderBody).get("id").asLong();
 
         mockMvc.perform(get("/api/orders/{id}", orderId).header("Authorization", "Bearer " + tokenB))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void approveOrder_asOwner_updatesApprovedColumn() throws Exception {
+        String token = registerAndGetToken("ihsan");
+        Product product = saveProduct("Mouse", "20.00", 100);
+        addToCart(token, product.getId(), 1);
+        String orderBody = mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + token))
+                .andReturn().getResponse().getContentAsString();
+        Long orderId = objectMapper.readTree(orderBody).get("id").asLong();
+
+        mockMvc.perform(post("/api/orders/{id}/approve", orderId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.approved").value(true));
+
+        assertThat(orderRepository.findById(orderId).orElseThrow().isApproved()).isTrue();
+    }
+
+    @Test
+    void approveOrder_whenNotOwner_returns404() throws Exception {
+        String ownerToken = registerAndGetToken("owner");
+        String otherToken = registerAndGetToken("other");
+        Product product = saveProduct("Mouse", "20.00", 100);
+        addToCart(ownerToken, product.getId(), 1);
+        String orderBody = mockMvc.perform(post("/api/orders").header("Authorization", "Bearer " + ownerToken))
+                .andReturn().getResponse().getContentAsString();
+        Long orderId = objectMapper.readTree(orderBody).get("id").asLong();
+
+        mockMvc.perform(post("/api/orders/{id}/approve", orderId)
+                        .header("Authorization", "Bearer " + otherToken))
                 .andExpect(status().isNotFound());
     }
 

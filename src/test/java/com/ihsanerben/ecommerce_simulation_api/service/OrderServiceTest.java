@@ -160,6 +160,7 @@ class OrderServiceTest {
         assertThat(cart.getCartItems()).isEmpty();
 
         assertThat(response.status()).isEqualTo(OrderStatus.PENDING);
+        assertThat(response.approved()).isFalse();
         assertThat(response.totalAmount()).isEqualByComparingTo("1040.00");
         assertThat(response.items()).hasSize(2);
 
@@ -216,6 +217,33 @@ class OrderServiceTest {
         OrderResponse response = orderService.updateStatus(1L, OrderStatus.SHIPPED);
 
         assertThat(response.status()).isEqualTo(OrderStatus.SHIPPED);
+    }
+
+    @Test
+    void approveOrder_whenOwned_setsApproved() {
+        Order order = Order.builder()
+                .id(1L).user(sampleUser(1L)).orderItems(new ArrayList<>())
+                .totalAmount(BigDecimal.TEN).status(OrderStatus.PENDING).createdAt(LocalDateTime.now())
+                .build();
+        given(orderRepository.findByIdAndUserId(1L, 1L)).willReturn(Optional.of(order));
+
+        OrderResponse response = orderService.approveOrder(1L, 1L);
+
+        assertThat(response.approved()).isTrue();
+        assertThat(order.isApproved()).isTrue();
+    }
+
+    @Test
+    void approveOrder_whenCancelled_throwsInvalidOrderStateException() {
+        Order order = Order.builder()
+                .id(1L).user(sampleUser(1L)).orderItems(new ArrayList<>())
+                .totalAmount(BigDecimal.TEN).status(OrderStatus.CANCELLED).createdAt(LocalDateTime.now())
+                .build();
+        given(orderRepository.findByIdAndUserId(1L, 1L)).willReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.approveOrder(1L, 1L))
+                .isInstanceOf(InvalidOrderStateException.class);
+        assertThat(order.isApproved()).isFalse();
     }
 
     @Test

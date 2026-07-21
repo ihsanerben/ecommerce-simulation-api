@@ -31,6 +31,7 @@ class PasswordResetServiceTest {
     @BeforeEach void setUp() {
         service = new PasswordResetService(users, tokens, history, sessions, encoder, hashService, email);
         ReflectionTestUtils.setField(service, "resetPasswordUrl", "https://frontend/reset-password");
+        ReflectionTestUtils.setField(service, "requestCooldownSeconds", 60L);
     }
 
     @Test void requestReset_forUnknownEmailDoesNotRevealAccount() {
@@ -47,6 +48,22 @@ class PasswordResetServiceTest {
         verify(tokens).save(captor.capture());
         verify(email).sendPasswordReset(eq(user.getEmail()), contains("?token="));
         assertThat(captor.getValue().getTokenHash()).isEqualTo("token-hash");
+        assertThat(captor.getValue().getCreatedAt()).isNotNull();
+        assertThat(captor.getValue().getExpiresAt())
+                .isEqualTo(captor.getValue().getCreatedAt().plusMinutes(15));
+        verify(tokens).deleteByUserId(user.getId());
+    }
+
+    @Test void requestReset_whenRequestedWithinCooldown_keepsExistingTokenAndDoesNotSendAnotherEmail() {
+        User user = user();
+        given(users.findByEmailIgnoreCase(user.getEmail())).willReturn(Optional.of(user));
+        given(tokens.existsByUserIdAndCreatedAtAfter(eq(user.getId()), any(LocalDateTime.class))).willReturn(true);
+
+        service.requestReset(user.getEmail());
+
+        verify(tokens, never()).deleteByUserId(anyLong());
+        verify(tokens, never()).save(any());
+        verifyNoInteractions(email);
     }
 
     @Test void resetPassword_rejectsOneOfLastThreePasswords() {
@@ -60,6 +77,16 @@ class PasswordResetServiceTest {
         assertThatThrownBy(() -> service.resetPassword("raw", "password123"))
                 .isInstanceOf(PasswordReuseException.class);
         verify(encoder, never()).encode(anyString());
+    }
+
+    @Test void resetPassword_rejectsUnknownToken() {
+        given(hashService.hash("invalid-token")).willReturn("invalid-hash");
+        given(tokens.findByTokenHash("invalid-hash")).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resetPassword("invalid-token", "new-password"))
+                .isInstanceOf(InvalidTokenException.class);
+
+        verifyNoInteractions(history, sessions, encoder);
     }
 
     @Test void resetPassword_updatesPasswordInvalidatesSessionsAndConsumesToken() {
@@ -78,6 +105,35 @@ class PasswordResetServiceTest {
         assertThat(token.getUsedAt()).isNotNull();
         assertThat(session.getRevokedAt()).isNotNull();
         verify(history).save(any(PasswordHistory.class));
+    }
+
+    @Test void resetPassword_rejectsExpiredTokenWithoutChangingPasswordOrSessions() {
+        User user = user();
+        PasswordResetToken token = PasswordResetToken.builder().user(user).tokenHash("hash")
+                .createdAt(LocalDateTime.now().minusMinutes(20))
+                .expiresAt(LocalDateTime.now().minusMinutes(5)).build();
+        given(hashService.hash("raw")).willReturn("hash");
+        given(tokens.findByTokenHash("hash")).willReturn(Optional.of(token));
+
+        assertThatThrownBy(() -> service.resetPassword("raw", "new-password"))
+                .isInstanceOf(InvalidTokenException.class);
+
+        assertThat(user.getPassword()).isEqualTo("old-hash");
+        verifyNoInteractions(sessions);
+    }
+
+    @Test void resetPassword_rejectsAlreadyUsedToken() {
+        User user = user();
+        PasswordResetToken token = validToken(user);
+        token.setUsedAt(LocalDateTime.now().minusMinutes(1));
+        given(hashService.hash("raw")).willReturn("hash");
+        given(tokens.findByTokenHash("hash")).willReturn(Optional.of(token));
+
+        assertThatThrownBy(() -> service.resetPassword("raw", "new-password"))
+                .isInstanceOf(InvalidTokenException.class);
+
+        verify(encoder, never()).encode(anyString());
+        verifyNoInteractions(sessions);
     }
 
     private User user() { return User.builder().id(1L).username("ihsan").email("ihsan@example.com")

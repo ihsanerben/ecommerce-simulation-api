@@ -60,6 +60,16 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrderById(principal.getId(), id));
     }
 
+    @PostMapping("/{id}/approve")
+    @Operation(summary = "Approve an order", description = "Approves one of your own orders.")
+    @ApiResponse(responseCode = "200", description = "Order approved")
+    @ApiResponse(responseCode = "404", description = "Order not found (or does not belong to you)")
+    @ApiResponse(responseCode = "409", description = "A cancelled order cannot be approved")
+    public ResponseEntity<OrderResponse> approveOrder(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable Long id) {
+        return ResponseEntity.ok(orderService.approveOrder(principal.getId(), id));
+    }
+
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update order status", description = "ADMIN only")

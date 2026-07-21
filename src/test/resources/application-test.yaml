@@ -1,4 +1,5 @@
 app:
+  demo-data-enabled: false
   jwt:
     secret: test-only-jwt-signing-secret-not-for-production-use-please-1234567890
     access-expiration-ms: 3600000

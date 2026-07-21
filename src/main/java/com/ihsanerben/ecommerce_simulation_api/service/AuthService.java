@@ -9,10 +9,12 @@ import com.ihsanerben.ecommerce_simulation_api.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +68,33 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         sessionService.logoutAll(user, accessToken);
+    }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request, String accessToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword()))
+            throw new BadCredentialsException("Current password is incorrect.");
+
+        List<PasswordHistory> recent = passwordHistoryRepository
+                .findTop3ByUserIdOrderByCreatedAtDesc(userId);
+        if (recent.stream().anyMatch(old -> passwordEncoder.matches(
+                request.newPassword(), old.getPasswordHash())))
+            throw new PasswordReuseException("New password must be different from the last 3 passwords.");
+
+        LocalDateTime now = LocalDateTime.now();
+        String newHash = passwordEncoder.encode(request.newPassword());
+        user.setPassword(newHash);
+        passwordHistoryRepository.save(PasswordHistory.builder().user(user).passwordHash(newHash)
+                .createdAt(now).build());
+        trimPasswordHistory(userId);
+        sessionService.logoutAll(user, accessToken);
+    }
+
+    private void trimPasswordHistory(Long userId) {
+        List<PasswordHistory> all = passwordHistoryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        if (all.size() > 3) passwordHistoryRepository.deleteAll(all.subList(3, all.size()));
     }
 
     private AuthResult result(User user, AuthTokens tokens) {

@@ -52,6 +52,10 @@ public class Order {
     @Column(nullable = false)
     private OrderStatus status;
 
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean approved = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 }

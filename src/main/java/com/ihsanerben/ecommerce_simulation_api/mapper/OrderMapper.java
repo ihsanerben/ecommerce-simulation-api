@@ -21,7 +21,8 @@ public class OrderMapper {
                 .map(this::toItemResponse)
                 .toList();
 
-        return new OrderResponse(order.getId(), items, order.getTotalAmount(), order.getStatus(), order.getCreatedAt());
+        return new OrderResponse(order.getId(), items, order.getTotalAmount(), order.getStatus(), order.isApproved(),
+                order.getCreatedAt());
     }
 
     private OrderItemResponse toItemResponse(OrderItem item) {

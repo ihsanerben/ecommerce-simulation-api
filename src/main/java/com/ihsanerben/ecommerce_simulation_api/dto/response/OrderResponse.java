@@ -11,6 +11,7 @@ public record OrderResponse(
         List<OrderItemResponse> items,
         BigDecimal totalAmount,
         OrderStatus status,
+        boolean approved,
         LocalDateTime createdAt
 ) {
 }

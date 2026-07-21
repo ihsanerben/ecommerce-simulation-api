@@ -19,23 +19,24 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:ihsanerben@gmail.com}
-    password: ${MAIL_PASSWORD:bepmedqbbapahcdr}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
 
 app:
+  auth:
+    password-reset-request-cooldown-seconds: ${PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS:60}
+    cookie:
+      secure: ${AUTH_COOKIE_SECURE:false}
+      same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
+      domain: ${AUTH_COOKIE_DOMAIN:}
   jwt:
     # Zorunlu: env variable olarak set edilmeli, burada default değer YOK.
     secret: ${JWT_SECRET}
     access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
-  auth:
-    cookie:
-      secure: ${AUTH_COOKIE_SECURE:false}
-      same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
-      domain: ${AUTH_COOKIE_DOMAIN:}
   frontend:
     reset-password-url: ${FRONTEND_RESET_PASSWORD_URL:http://localhost:3000/reset-password}
   security:

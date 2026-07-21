@@ -3,6 +3,7 @@ package com.ihsanerben.ecommerce_simulation_api.service;
 import com.ihsanerben.ecommerce_simulation_api.dto.request.*;
 import com.ihsanerben.ecommerce_simulation_api.entity.*;
 import com.ihsanerben.ecommerce_simulation_api.exception.DuplicateResourceException;
+import com.ihsanerben.ecommerce_simulation_api.exception.PasswordReuseException;
 import com.ihsanerben.ecommerce_simulation_api.repository.*;
 import com.ihsanerben.ecommerce_simulation_api.security.JwtService;
 import org.junit.jupiter.api.*;
@@ -12,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -69,6 +71,50 @@ class AuthServiceTest {
         doThrow(new BadCredentialsException("bad")).when(authenticationManager).authenticate(any());
         assertThatThrownBy(() -> service.login(new LoginRequest("ihsan", "bad"), null, null))
                 .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test void changePassword_withWrongCurrentPassword_doesNotChangePasswordOrSessions() {
+        User user = user();
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("wrong-password", "hash")).willReturn(false);
+
+        assertThatThrownBy(() -> service.changePassword(1L,
+                new ChangePasswordRequest("wrong-password", "new-password"), "access"))
+                .isInstanceOf(BadCredentialsException.class);
+
+        verify(passwordEncoder, never()).encode(anyString());
+        verifyNoInteractions(sessionService);
+    }
+
+    @Test void changePassword_withRecentPassword_rejectsReuse() {
+        User user = user();
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("password123", "hash")).willReturn(true);
+        given(historyRepository.findTop3ByUserIdOrderByCreatedAtDesc(1L)).willReturn(List.of(
+                PasswordHistory.builder().passwordHash("recent-hash").build()));
+        given(passwordEncoder.matches("old-password", "recent-hash")).willReturn(true);
+
+        assertThatThrownBy(() -> service.changePassword(1L,
+                new ChangePasswordRequest("password123", "old-password"), "access"))
+                .isInstanceOf(PasswordReuseException.class);
+
+        verifyNoInteractions(sessionService);
+    }
+
+    @Test void changePassword_withValidRequest_updatesHistoryAndRevokesEverySession() {
+        User user = user();
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("password123", "hash")).willReturn(true);
+        given(historyRepository.findTop3ByUserIdOrderByCreatedAtDesc(1L)).willReturn(List.of());
+        given(historyRepository.findAllByUserIdOrderByCreatedAtDesc(1L)).willReturn(List.of());
+        given(passwordEncoder.encode("new-password")).willReturn("new-hash");
+
+        service.changePassword(1L,
+                new ChangePasswordRequest("password123", "new-password"), "access");
+
+        assertThat(user.getPassword()).isEqualTo("new-hash");
+        verify(historyRepository).save(any(PasswordHistory.class));
+        verify(sessionService).logoutAll(user, "access");
     }
 
     private RegisterRequest request() { return new RegisterRequest("ihsan", "ihsan@example.com", "password123"); }

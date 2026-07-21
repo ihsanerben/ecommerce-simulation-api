@@ -29,15 +29,21 @@ public class PasswordResetService {
     @Value("${app.frontend.reset-password-url}")
     private String resetPasswordUrl;
 
+    @Value("${app.auth.password-reset-request-cooldown-seconds:60}")
+    private long requestCooldownSeconds;
+
     @Transactional
     public void requestReset(String email) {
         userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
+            LocalDateTime now = LocalDateTime.now();
+            if (resetTokenRepository.existsByUserIdAndCreatedAtAfter(
+                    user.getId(), now.minusSeconds(requestCooldownSeconds))) return;
             resetTokenRepository.deleteByUserId(user.getId());
             byte[] bytes = new byte[32];
             secureRandom.nextBytes(bytes);
             String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
             resetTokenRepository.save(PasswordResetToken.builder().user(user).tokenHash(hashService.hash(rawToken))
-                    .createdAt(LocalDateTime.now()).expiresAt(LocalDateTime.now().plusMinutes(15)).build());
+                    .createdAt(now).expiresAt(now.plusMinutes(15)).build());
             emailService.sendPasswordReset(user.getEmail(), resetPasswordUrl + "?token=" + rawToken);
         });
     }
