@@ -98,8 +98,35 @@ All endpoints are under `/api`. Full request/response schemas are in Swagger UI.
 ### Auth (public)
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/auth/register` | Register a new user (role `USER`) |
-| POST | `/api/auth/login` | Log in, returns a JWT |
+| POST | `/api/auth/register` | Register and create a secure cookie session |
+| POST | `/api/auth/login` | Log in and create a secure cookie session |
+| POST | `/api/auth/refresh` | Rotate refresh token and renew the session |
+| POST | `/api/auth/logout` | Revoke current session and tokens |
+| POST | `/api/auth/logout-all` | Revoke all sessions for the user |
+| POST | `/api/auth/forgot-password` | Send a password reset email |
+| POST | `/api/auth/reset-password` | Reset password; last 3 passwords cannot be reused |
+
+Authentication tokens are returned as `HttpOnly` cookies, never in the JSON body.
+The access token is short-lived; the refresh token is rotated on every refresh and
+tracked by a hashed server-side session. Browser clients must first call
+`GET /api/auth/csrf`, then send the `ECOMMERCE-XSRF-TOKEN` cookie value as the
+`X-XSRF-TOKEN` header for state-changing requests. Cross-origin clients must use
+credentials (`credentials: "include"` / Axios `withCredentials: true`).
+
+### Testing the secure auth flow in Swagger UI
+
+Swagger UI runs on the API origin, so the browser stores and sends the HttpOnly
+authentication cookies automatically. Use this order:
+
+1. Execute `GET /api/auth/csrf` once.
+2. Execute `POST /api/auth/register` or `POST /api/auth/login`.
+3. Call protected cart/order endpoints directly; do not copy a token and do not
+   use the Authorize button for the normal cookie flow.
+4. Execute `POST /api/auth/refresh` to rotate the token pair.
+5. Execute `POST /api/auth/logout`, then verify that protected endpoints fail.
+
+Springdoc's Swagger UI CSRF support is enabled and automatically copies the
+`ECOMMERCE-XSRF-TOKEN` cookie into the `X-XSRF-TOKEN` request header.
 
 ### Categories
 | Method | Endpoint | Auth |

@@ -35,6 +35,7 @@ public class CartController {
     @GetMapping
     @Operation(summary = "Get the cart", description = "If the user has no cart, an empty one is created automatically.")
     @ApiResponse(responseCode = "200", description = "Cart")
+    @ApiResponse(responseCode = "401", description = "Authentication cookie is missing, expired, or revoked")
     public ResponseEntity<CartResponse> getCart(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(cartService.getCart(principal.getId()));
     }

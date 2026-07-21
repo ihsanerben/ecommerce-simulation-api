@@ -16,12 +16,36 @@ spring:
         format_sql: true
     open-in-view: false
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:ihsanerben@gmail.com}
+    password: ${MAIL_PASSWORD:bepmedqbbapahcdr}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
 app:
   jwt:
     # Zorunlu: env variable olarak set edilmeli, burada default değer YOK.
     secret: ${JWT_SECRET}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  auth:
+    cookie:
+      secure: ${AUTH_COOKIE_SECURE:false}
+      same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
+      domain: ${AUTH_COOKIE_DOMAIN:}
+  frontend:
+    reset-password-url: ${FRONTEND_RESET_PASSWORD_URL:http://localhost:3000/reset-password}
+  security:
+    csrf-enabled: ${CSRF_ENABLED:true}
+    allowed-origin: ${FRONTEND_ORIGIN:http://localhost:3000}
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    csrf:
+      enabled: true
+      cookie-name: ECOMMERCE-XSRF-TOKEN
+      header-name: X-XSRF-TOKEN

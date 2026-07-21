@@ -98,6 +98,14 @@ class ProductControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void getProducts_withInvalidSortProperty_returns400InsteadOf500() throws Exception {
+        mockMvc.perform(get("/api/products").param("sort", "unknownField,asc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Invalid sort property 'unknownField'."));
+    }
+
+    @Test
     void getProductById_whenNotExists_returns404() throws Exception {
         mockMvc.perform(get("/api/products/999"))
                 .andExpect(status().isNotFound());
@@ -118,14 +126,14 @@ class ProductControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void createProduct_withoutAuthentication_isForbidden() throws Exception {
+    void createProduct_withoutAuthentication_isUnauthorized() throws Exception {
         Category category = saveCategory("Electronics");
         ProductRequest request = new ProductRequest("Laptop", "A laptop", new BigDecimal("999.99"), 5, category.getId());
 
         mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
