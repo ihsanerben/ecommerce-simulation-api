@@ -33,7 +33,6 @@ app:
       same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
       domain: ${AUTH_COOKIE_DOMAIN:}
   jwt:
-    # Zorunlu: env variable olarak set edilmeli, burada default değer YOK.
     secret: ${JWT_SECRET}
     access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
