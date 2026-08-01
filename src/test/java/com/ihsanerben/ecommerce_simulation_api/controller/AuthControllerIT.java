@@ -8,6 +8,7 @@ import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.RevokedAccessTokenRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.CartRepository;
 import com.ihsanerben.ecommerce_simulation_api.security.JwtService;
+import com.ihsanerben.ecommerce_simulation_api.service.LoginRateLimitService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -42,8 +43,12 @@ class AuthControllerIT extends AbstractIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private LoginRateLimitService loginRateLimitService;
+
     @AfterEach
     void tearDown() {
+        loginRateLimitService.reset("127.0.0.1");
         cartRepository.deleteAll();
         userRepository.deleteAll();
         revokedAccessTokenRepository.deleteAll();
@@ -120,6 +125,67 @@ class AuthControllerIT extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void login_afterFiveFailedAttemptsFromSameIp_returns429() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest("ihsan", "ihsan@example.com", "password123");
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isCreated());
+
+        LoginRequest invalidLogin = new LoginRequest("ihsan", "wrong-password");
+        for (int attempt = 1; attempt < 5; attempt++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidLogin)))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidLogin)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.error").value("Too Many Requests"))
+                .andExpect(jsonPath("$.path").value("/api/auth/login"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Retry-After", "60"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("ihsan", "password123"))))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void login_afterSuccessfulAttempt_resetsFailedAttemptCounter() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest("ihsan", "ihsan@example.com", "password123");
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isCreated());
+
+        LoginRequest invalidLogin = new LoginRequest("ihsan", "wrong-password");
+        for (int attempt = 0; attempt < 4; attempt++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidLogin)))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("ihsan", "password123"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidLogin)))
                 .andExpect(status().isUnauthorized());
     }
 

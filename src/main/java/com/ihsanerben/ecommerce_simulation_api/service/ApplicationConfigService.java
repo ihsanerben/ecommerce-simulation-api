@@ -18,4 +18,13 @@ public class ApplicationConfigService {
                 .orElseThrow(() -> new ResourceNotFoundException("ApplicationConfig", "key", key))
                 .getConfigValue();
     }
+
+    public int getInteger(String key) {
+        String value = getValue(key);
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalStateException("Application config '%s' must be an integer.".formatted(key), exception);
+        }
+    }
 }

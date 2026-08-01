@@ -51,4 +51,32 @@ class ApplicationConfigServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("missing.key");
     }
+
+    @Test
+    void getInteger_whenValueIsNumeric_returnsInteger() {
+        ApplicationConfig config = ApplicationConfig.builder()
+                .configKey("auth.login.max-attempts")
+                .configValue("5")
+                .build();
+        given(applicationConfigRepository.findByConfigKey("auth.login.max-attempts"))
+                .willReturn(Optional.of(config));
+
+        int result = applicationConfigService.getInteger("auth.login.max-attempts");
+
+        assertThat(result).isEqualTo(5);
+    }
+
+    @Test
+    void getInteger_whenValueIsNotNumeric_throwsIllegalStateException() {
+        ApplicationConfig config = ApplicationConfig.builder()
+                .configKey("auth.login.max-attempts")
+                .configValue("invalid")
+                .build();
+        given(applicationConfigRepository.findByConfigKey("auth.login.max-attempts"))
+                .willReturn(Optional.of(config));
+
+        assertThatThrownBy(() -> applicationConfigService.getInteger("auth.login.max-attempts"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("must be an integer");
+    }
 }

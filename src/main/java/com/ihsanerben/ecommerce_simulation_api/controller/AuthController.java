@@ -26,6 +26,7 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
     private final TokenCookieService cookieService;
+    private final LoginRateLimitService loginRateLimitService;
 
     @GetMapping("/csrf")
     @Operation(summary = "Initialize CSRF protection", description = "Run this once before POST, PUT, or DELETE operations in Swagger UI. Swagger then sends the CSRF header automatically.")
@@ -54,9 +55,12 @@ public class AuthController {
     @ApiResponse(responseCode = "400", description = "Validation error or malformed request")
     @ApiResponse(responseCode = "401", description = "Username or password is incorrect")
     @ApiResponse(responseCode = "403", description = "CSRF token is missing or invalid")
+    @ApiResponse(responseCode = "429", description = "Too many failed login attempts from the same IP address")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest, HttpServletResponse response) {
-        AuthResult result = authService.login(request, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
+        String ipAddress = httpRequest.getRemoteAddr();
+        AuthResult result = loginRateLimitService.execute(ipAddress,
+                () -> authService.login(request, httpRequest.getHeader("User-Agent"), ipAddress));
         write(response, result);
         return ResponseEntity.ok(result.response());
     }
