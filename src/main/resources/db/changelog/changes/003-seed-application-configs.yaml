@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-seed-login-max-attempts
+      author: ihsanerben
+      comment: Seed the maximum failed login attempts used by rate limiting.
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM application_configs WHERE config_key = 'auth.login.max-attempts'
+      changes:
+        - insert:
+            tableName: application_configs
+            columns:
+              - column:
+                  name: config_key
+                  value: auth.login.max-attempts
+              - column:
+                  name: config_value
+                  value: "5"
+      rollback:
+        - delete:
+            tableName: application_configs
+            where: config_key = 'auth.login.max-attempts'
+
+  - changeSet:
+      id: 004-seed-login-window-seconds
+      author: ihsanerben
+      comment: Seed the login rate-limit window in seconds.
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM application_configs WHERE config_key = 'auth.login.window-seconds'
+      changes:
+        - insert:
+            tableName: application_configs
+            columns:
+              - column:
+                  name: config_key
+                  value: auth.login.window-seconds
+              - column:
+                  name: config_value
+                  value: "60"
+      rollback:
+        - delete:
+            tableName: application_configs
+            where: config_key = 'auth.login.window-seconds'

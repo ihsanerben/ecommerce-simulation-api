@@ -1,0 +1,54 @@
+package com.ihsanerben.ecommerce_simulation_api.service;
+
+import com.ihsanerben.ecommerce_simulation_api.entity.ApplicationConfig;
+import com.ihsanerben.ecommerce_simulation_api.exception.ResourceNotFoundException;
+import com.ihsanerben.ecommerce_simulation_api.repository.ApplicationConfigRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+
+@ExtendWith(MockitoExtension.class)
+class ApplicationConfigServiceTest {
+
+    @Mock
+    private ApplicationConfigRepository applicationConfigRepository;
+
+    private ApplicationConfigService applicationConfigService;
+
+    @BeforeEach
+    void setUp() {
+        applicationConfigService = new ApplicationConfigService(applicationConfigRepository);
+    }
+
+    @Test
+    void getValue_whenKeyExists_returnsValue() {
+        ApplicationConfig config = ApplicationConfig.builder()
+                .configKey("auth.login.max-attempts")
+                .configValue("5")
+                .build();
+        given(applicationConfigRepository.findByConfigKey("auth.login.max-attempts"))
+                .willReturn(Optional.of(config));
+
+        String result = applicationConfigService.getValue("auth.login.max-attempts");
+
+        assertThat(result).isEqualTo("5");
+    }
+
+    @Test
+    void getValue_whenKeyDoesNotExist_throwsResourceNotFoundException() {
+        given(applicationConfigRepository.findByConfigKey("missing.key"))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> applicationConfigService.getValue("missing.key"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("missing.key");
+    }
+}

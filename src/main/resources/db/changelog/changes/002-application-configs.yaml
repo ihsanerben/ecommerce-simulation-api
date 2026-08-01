@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-application-configs
+      author: ihsanerben
+      comment: Create the key-value table for operational application configuration.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: application_configs
+      changes:
+        - createTable:
+            tableName: application_configs
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_application_configs
+                    nullable: false
+              - column:
+                  name: config_key
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: config_value
+                  type: VARCHAR(4000)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: application_configs
+            columnNames: config_key
+            constraintName: uk_application_configs_key
+      rollback:
+        - dropTable:
+            tableName: application_configs
