@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-baseline-schema
+      author: ihsanerben
+      comment: Baseline the schema that existed before Liquibase was introduced.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: users
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/001-baseline-schema.sql
+            splitStatements: true
+            stripComments: true

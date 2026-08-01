@@ -9,12 +9,16 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: ${JPA_SHOW_SQL:true}
     properties:
       hibernate:
         format_sql: true
     open-in-view: false
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
