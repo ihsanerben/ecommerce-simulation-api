@@ -1,4 +1,4 @@
-package com.ihsanerben.ecommerce_simulation_api.service;
+package com.ihsanerben.ecommerce_simulation_api.dto.internal;
 
 import com.ihsanerben.ecommerce_simulation_api.dto.response.AuthResponse;
 

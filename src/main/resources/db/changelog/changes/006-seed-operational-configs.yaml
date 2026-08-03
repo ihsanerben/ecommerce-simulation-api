@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-seed-operational-application-configs
+      author: ihsanerben
+      comment: Move non-secret operational settings from environment variables to Config Service.
+      changes:
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: jwt.access-expiration-ms }
+              - column: { name: config_value, value: "900000" }
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: jwt.refresh-expiration-ms }
+              - column: { name: config_value, value: "604800000" }
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: auth.cookie.secure }
+              - column: { name: config_value, value: "false" }
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: auth.cookie.same-site }
+              - column: { name: config_value, value: Lax }
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: auth.cookie.domain }
+              - column: { name: config_value, value: "" }
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: auth.password-reset-request-cooldown-seconds }
+              - column: { name: config_value, value: "60" }
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: frontend.reset-password-url }
+              - column: { name: config_value, value: "http://localhost:3000/reset-password" }
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: security.allowed-origin }
+              - column: { name: config_value, value: "http://localhost:3000" }
+      rollback:
+        - delete:
+            tableName: application_configs
+            where: >-
+              config_key IN (
+                'jwt.access-expiration-ms',
+                'jwt.refresh-expiration-ms',
+                'auth.cookie.secure',
+                'auth.cookie.same-site',
+                'auth.cookie.domain',
+                'auth.password-reset-request-cooldown-seconds',
+                'frontend.reset-password-url',
+                'security.allowed-origin'
+              )

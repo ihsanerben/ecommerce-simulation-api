@@ -1,6 +1,7 @@
 package com.ihsanerben.ecommerce_simulation_api.security;
 
 import com.ihsanerben.ecommerce_simulation_api.config.JwtProperties;
+import com.ihsanerben.ecommerce_simulation_api.service.ApplicationConfigService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -15,19 +16,25 @@ import java.util.Date;
 import java.util.UUID;
 import java.util.function.Function;
 
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.JWT_ACCESS_EXPIRATION_MS;
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.JWT_REFRESH_EXPIRATION_MS;
+
 @Service
 @RequiredArgsConstructor
 public class JwtService {
     public static final String ACCESS = "access";
     public static final String REFRESH = "refresh";
     private final JwtProperties properties;
+    private final ApplicationConfigService applicationConfigService;
 
     public String generateAccessToken(UserPrincipal principal) {
-        return build(principal, ACCESS, properties.accessExpirationMs(), UUID.randomUUID().toString(), null);
+        return build(principal, ACCESS, applicationConfigService.getLong(JWT_ACCESS_EXPIRATION_MS),
+                UUID.randomUUID().toString(), null);
     }
 
     public String generateRefreshToken(UserPrincipal principal, String familyId) {
-        return build(principal, REFRESH, properties.refreshExpirationMs(), UUID.randomUUID().toString(), familyId);
+        return build(principal, REFRESH, applicationConfigService.getLong(JWT_REFRESH_EXPIRATION_MS),
+                UUID.randomUUID().toString(), familyId);
     }
 
     // Kept for API clients and tests that explicitly need a standalone access token.

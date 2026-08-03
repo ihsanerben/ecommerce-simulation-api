@@ -2,14 +2,5 @@ app:
   demo-data-enabled: false
   jwt:
     secret: test-only-jwt-signing-secret-not-for-production-use-please-1234567890
-    access-expiration-ms: 3600000
-    refresh-expiration-ms: 86400000
-  auth:
-    cookie:
-      secure: false
-      same-site: Lax
-      domain: ""
-  frontend:
-    reset-password-url: http://localhost:3000/reset-password
   security:
     csrf-enabled: false

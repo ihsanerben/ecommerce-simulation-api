@@ -1,6 +1,9 @@
 package com.ihsanerben.ecommerce_simulation_api;
 
 import com.ihsanerben.ecommerce_simulation_api.config.TestcontainersConfiguration;
+import com.ihsanerben.ecommerce_simulation_api.repository.RateLimitEntryRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -11,4 +14,12 @@ import org.springframework.test.context.ActiveProfiles;
 @Import(TestcontainersConfiguration.class)
 @ActiveProfiles("test")
 public abstract class AbstractIntegrationTest {
+
+    @Autowired
+    private RateLimitEntryRepository rateLimitEntryRepository;
+
+    @AfterEach
+    void clearRateLimitEntries() {
+        rateLimitEntryRepository.deleteAll();
+    }
 }

@@ -9,6 +9,7 @@ import com.ihsanerben.ecommerce_simulation_api.repository.RevokedAccessTokenRepo
 import com.ihsanerben.ecommerce_simulation_api.repository.CartRepository;
 import com.ihsanerben.ecommerce_simulation_api.security.JwtService;
 import com.ihsanerben.ecommerce_simulation_api.service.LoginRateLimitService;
+import com.ihsanerben.ecommerce_simulation_api.service.SensitiveEndpointRateLimitService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -46,9 +47,14 @@ class AuthControllerIT extends AbstractIntegrationTest {
     @Autowired
     private LoginRateLimitService loginRateLimitService;
 
+    @Autowired
+    private SensitiveEndpointRateLimitService sensitiveEndpointRateLimitService;
+
     @AfterEach
     void tearDown() {
         loginRateLimitService.reset("127.0.0.1");
+        sensitiveEndpointRateLimitService.resetRegister("127.0.0.1");
+        sensitiveEndpointRateLimitService.resetForgotPassword("127.0.0.1");
         cartRepository.deleteAll();
         userRepository.deleteAll();
         revokedAccessTokenRepository.deleteAll();
@@ -93,6 +99,32 @@ class AuthControllerIT extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.email").exists());
+    }
+
+    @Test
+    void register_afterFiveRequestsFromSameIp_returns429() throws Exception {
+        for (int attempt = 1; attempt < 5; attempt++) {
+            RegisterRequest request = new RegisterRequest(
+                    "user" + attempt,
+                    "user" + attempt + "@example.com",
+                    "password123");
+            mockMvc.perform(post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated());
+        }
+
+        RegisterRequest blockedRequest = new RegisterRequest(
+                "user5",
+                "user5@example.com",
+                "password123");
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(blockedRequest)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.path").value("/api/auth/register"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Retry-After", "60"));
     }
 
     @Test
@@ -197,6 +229,24 @@ class AuthControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(
                         "If an account exists for this email, a reset link has been sent."));
+    }
+
+    @Test
+    void forgotPassword_afterThreeRequestsFromSameIp_returns429() throws Exception {
+        for (int attempt = 1; attempt < 3; attempt++) {
+            mockMvc.perform(post("/api/auth/forgot-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"unknown@example.com\"}"))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"unknown@example.com\"}"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.path").value("/api/auth/forgot-password"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Retry-After", "300"));
     }
 
     @Test

@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-seed-register-rate-limit
+      author: ihsanerben
+      comment: Seed IP-based registration rate-limit policy.
+      changes:
+        - insert:
+            tableName: application_configs
+            columns:
+              - column:
+                  name: config_key
+                  value: auth.register.max-attempts
+              - column:
+                  name: config_value
+                  value: "5"
+        - insert:
+            tableName: application_configs
+            columns:
+              - column:
+                  name: config_key
+                  value: auth.register.window-seconds
+              - column:
+                  name: config_value
+                  value: "60"
+      rollback:
+        - delete:
+            tableName: application_configs
+            where: config_key IN ('auth.register.max-attempts', 'auth.register.window-seconds')
+
+  - changeSet:
+      id: 007-seed-forgot-password-rate-limit
+      author: ihsanerben
+      comment: Seed IP-based forgot-password rate-limit policy.
+      changes:
+        - insert:
+            tableName: application_configs
+            columns:
+              - column:
+                  name: config_key
+                  value: auth.forgot-password.max-attempts
+              - column:
+                  name: config_value
+                  value: "3"
+        - insert:
+            tableName: application_configs
+            columns:
+              - column:
+                  name: config_key
+                  value: auth.forgot-password.window-seconds
+              - column:
+                  name: config_value
+                  value: "300"
+      rollback:
+        - delete:
+            tableName: application_configs
+            where: config_key IN ('auth.forgot-password.max-attempts', 'auth.forgot-password.window-seconds')

@@ -1,6 +1,7 @@
 package com.ihsanerben.ecommerce_simulation_api.controller;
 
 import com.ihsanerben.ecommerce_simulation_api.dto.request.*;
+import com.ihsanerben.ecommerce_simulation_api.dto.internal.AuthResult;
 import com.ihsanerben.ecommerce_simulation_api.dto.response.*;
 import com.ihsanerben.ecommerce_simulation_api.exception.InvalidTokenException;
 import com.ihsanerben.ecommerce_simulation_api.security.*;
@@ -27,6 +28,7 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final TokenCookieService cookieService;
     private final LoginRateLimitService loginRateLimitService;
+    private final SensitiveEndpointRateLimitService sensitiveEndpointRateLimitService;
 
     @GetMapping("/csrf")
     @Operation(summary = "Initialize CSRF protection", description = "Run this once before POST, PUT, or DELETE operations in Swagger UI. Swagger then sends the CSRF header automatically.")
@@ -42,8 +44,10 @@ public class AuthController {
     @ApiResponse(responseCode = "400", description = "Validation error or malformed request")
     @ApiResponse(responseCode = "403", description = "CSRF token is missing or invalid")
     @ApiResponse(responseCode = "409", description = "Username or email already exists")
+    @ApiResponse(responseCode = "429", description = "Too many registration requests from the same IP address")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request,
             HttpServletRequest httpRequest, HttpServletResponse response) {
+        sensitiveEndpointRateLimitService.consumeRegisterRequest(httpRequest.getRemoteAddr());
         AuthResult result = authService.register(request, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
         write(response, result);
         return ResponseEntity.status(HttpStatus.CREATED).body(result.response());
@@ -128,8 +132,11 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "Password reset request accepted")
     @ApiResponse(responseCode = "400", description = "Email format is invalid")
     @ApiResponse(responseCode = "403", description = "CSRF token is missing or invalid")
+    @ApiResponse(responseCode = "429", description = "Too many password reset requests from the same IP address")
     @ApiResponse(responseCode = "503", description = "Email service is temporarily unavailable")
-    public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        sensitiveEndpointRateLimitService.consumeForgotPasswordRequest(httpRequest.getRemoteAddr());
         passwordResetService.requestReset(request.email());
         return ResponseEntity.ok(new MessageResponse("If an account exists for this email, a reset link has been sent."));
     }

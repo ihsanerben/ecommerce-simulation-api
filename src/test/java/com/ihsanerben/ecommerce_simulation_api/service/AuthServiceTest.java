@@ -1,5 +1,7 @@
 package com.ihsanerben.ecommerce_simulation_api.service;
 
+import com.ihsanerben.ecommerce_simulation_api.dto.internal.AuthResult;
+import com.ihsanerben.ecommerce_simulation_api.dto.internal.AuthTokens;
 import com.ihsanerben.ecommerce_simulation_api.dto.request.*;
 import com.ihsanerben.ecommerce_simulation_api.entity.*;
 import com.ihsanerben.ecommerce_simulation_api.exception.DuplicateResourceException;
