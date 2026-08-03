@@ -20,5 +20,5 @@ public interface RateLimitEntryRepository extends JpaRepository<RateLimitEntry, 
 
     @Modifying
     @Query("DELETE FROM RateLimitEntry entry WHERE entry.windowExpiresAt < :cutoff")
-    void deleteExpiredBefore(@Param("cutoff") Instant cutoff);
+    int deleteExpiredBefore(@Param("cutoff") Instant cutoff);
 }

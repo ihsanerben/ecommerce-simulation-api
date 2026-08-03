@@ -35,3 +35,6 @@ build/
 
 ### Environment ###
 .env
+
+### Application logs ###
+logs/

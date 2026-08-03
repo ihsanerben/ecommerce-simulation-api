@@ -5,12 +5,16 @@ import com.ihsanerben.ecommerce_simulation_api.exception.RateLimitExceededExcept
 import com.ihsanerben.ecommerce_simulation_api.repository.RateLimitEntryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 
+import static com.ihsanerben.ecommerce_simulation_api.config.ClientIdentifierHasher.forLog;
+
 @Service
+@Slf4j
 public class DatabaseRateLimiter {
 
     private final RateLimitEntryRepository repository;
@@ -32,6 +36,7 @@ public class DatabaseRateLimiter {
                 return;
             }
             if (entry.getBlockedUntil() != null && now.isBefore(entry.getBlockedUntil())) {
+                log.warn("event=rate_limit_rejected scope={} clientRef={}", scope, forLog(clientId));
                 throw exceeded(retryAfterSeconds(now, entry.getBlockedUntil()));
             }
         });
@@ -54,6 +59,8 @@ public class DatabaseRateLimiter {
         repository.saveAndFlush(entry);
 
         if (entry.getBlockedUntil() != null) {
+            log.warn("event=rate_limit_reached scope={} clientRef={} attempts={}",
+                    scope, forLog(clientId), entry.getAttemptCount());
             throw exceeded(retryAfterSeconds(now, entry.getBlockedUntil()));
         }
     }
