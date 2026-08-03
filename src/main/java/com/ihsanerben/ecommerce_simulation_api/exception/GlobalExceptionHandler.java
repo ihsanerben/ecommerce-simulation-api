@@ -1,6 +1,7 @@
 package com.ihsanerben.ecommerce_simulation_api.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -127,6 +129,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MailException.class)
     public ResponseEntity<ErrorResponse> handleMailFailure(MailException ex, HttpServletRequest request) {
+        log.error("event=mail_delivery_failed method={} path={} exception={}",
+                request.getMethod(), request.getRequestURI(), ex.getClass().getSimpleName());
         return buildResponse(HttpStatus.SERVICE_UNAVAILABLE,
                 "Email service is temporarily unavailable. Please try again later.", request);
     }
@@ -159,6 +163,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
+        log.error("event=unhandled_exception method={} path={} exception={}",
+                request.getMethod(), request.getRequestURI(), ex.getClass().getSimpleName(), ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.", request);
     }
 

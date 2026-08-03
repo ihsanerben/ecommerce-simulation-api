@@ -1,14 +1,18 @@
 package com.ihsanerben.ecommerce_simulation_api.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.function.Supplier;
 
+import static com.ihsanerben.ecommerce_simulation_api.config.ClientIdentifierHasher.forLog;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LoginRateLimitService {
 
     private static final String SCOPE = "auth.login.failures";
@@ -27,6 +31,7 @@ public class LoginRateLimitService {
             return result;
         } catch (BadCredentialsException exception) {
             rateLimiter.recordAttempt(SCOPE, ipAddress, policy.maxAttempts(), policy.window());
+            log.warn("event=login_failed clientRef={}", forLog(ipAddress));
             throw exception;
         }
     }

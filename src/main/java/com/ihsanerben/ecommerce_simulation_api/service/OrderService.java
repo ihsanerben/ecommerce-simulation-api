@@ -17,6 +17,7 @@ import com.ihsanerben.ecommerce_simulation_api.repository.CartRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.OrderRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -77,6 +79,9 @@ public class OrderService {
 
         orderRepository.save(order);
         cart.getCartItems().clear();
+
+        log.info("event=order_created orderId={} userId={} itemCount={}",
+                order.getId(), userId, order.getOrderItems().size());
 
         return orderMapper.toResponse(order);
     }
@@ -136,6 +141,8 @@ public class OrderService {
 
     private void ensureSufficientStock(Product product, int requestedQuantity) {
         if (product.getStockQuantity() < requestedQuantity) {
+            log.warn("event=insufficient_stock productId={} requested={} available={}",
+                    product.getId(), requestedQuantity, product.getStockQuantity());
             throw new InsufficientStockException(
                     "Insufficient stock for product '%s': requested %d, available %d"
                             .formatted(product.getName(), requestedQuantity, product.getStockQuantity()));
