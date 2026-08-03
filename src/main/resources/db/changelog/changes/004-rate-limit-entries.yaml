@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-rate-limit-entries
+      author: ihsanerben
+      comment: Persist rate-limit windows so they survive application restarts.
+      changes:
+        - createTable:
+            tableName: rate_limit_entries
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_rate_limit_entries
+                    nullable: false
+              - column:
+                  name: scope
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempt_count
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: window_started_at
+                  type: TIMESTAMP(6) WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: window_expires_at
+                  type: TIMESTAMP(6) WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: blocked_until
+                  type: TIMESTAMP(6) WITH TIME ZONE
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP(6) WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: rate_limit_entries
+            columnNames: scope, client_id
+            constraintName: uk_rate_limit_entries_scope_client
+        - createIndex:
+            tableName: rate_limit_entries
+            indexName: idx_rate_limit_entries_window_expires_at
+            columns:
+              - column:
+                  name: window_expires_at
+      rollback:
+        - dropTable:
+            tableName: rate_limit_entries

@@ -4,6 +4,7 @@ import com.ihsanerben.ecommerce_simulation_api.security.JwtAuthenticationFilter;
 import com.ihsanerben.ecommerce_simulation_api.security.RestAccessDeniedHandler;
 import com.ihsanerben.ecommerce_simulation_api.security.RestAuthenticationEntryPoint;
 import com.ihsanerben.ecommerce_simulation_api.security.SwaggerCsrfCookieFilter;
+import com.ihsanerben.ecommerce_simulation_api.service.ApplicationConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
@@ -24,6 +25,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.SECURITY_ALLOWED_ORIGIN;
+
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
@@ -35,8 +38,9 @@ public class SecurityConfig {
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
     private final SwaggerCsrfCookieFilter swaggerCsrfCookieFilter;
-    @Value("${app.security.csrf-enabled:true}") private boolean csrfEnabled;
-    @Value("${app.security.allowed-origin:http://localhost:3000}") private String allowedOrigin;
+    private final ApplicationConfigService applicationConfigService;
+    @Value("${app.security.csrf-enabled:true}")
+    private boolean csrfEnabled;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -73,7 +77,7 @@ public class SecurityConfig {
     @Bean
     UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(allowedOrigin));
+        config.setAllowedOrigins(List.of(applicationConfigService.getValue(SECURITY_ALLOWED_ORIGIN)));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Content-Type", "X-XSRF-TOKEN", "Authorization"));
         config.setAllowCredentials(true);

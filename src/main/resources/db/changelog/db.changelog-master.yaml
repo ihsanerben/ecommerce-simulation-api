@@ -5,3 +5,9 @@ databaseChangeLog:
       file: db/changelog/changes/002-application-configs.yaml
   - include:
       file: db/changelog/changes/003-seed-application-configs.yaml
+  - include:
+      file: db/changelog/changes/004-rate-limit-entries.yaml
+  - include:
+      file: db/changelog/changes/005-seed-endpoint-rate-limits.yaml
+  - include:
+      file: db/changelog/changes/006-seed-operational-configs.yaml

@@ -27,4 +27,21 @@ public class ApplicationConfigService {
             throw new IllegalStateException("Application config '%s' must be an integer.".formatted(key), exception);
         }
     }
+
+    public long getLong(String key) {
+        String value = getValue(key);
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalStateException("Application config '%s' must be a long.".formatted(key), exception);
+        }
+    }
+
+    public boolean getBoolean(String key) {
+        String value = getValue(key);
+        if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
+            throw new IllegalStateException("Application config '%s' must be true or false.".formatted(key));
+        }
+        return Boolean.parseBoolean(value);
+    }
 }

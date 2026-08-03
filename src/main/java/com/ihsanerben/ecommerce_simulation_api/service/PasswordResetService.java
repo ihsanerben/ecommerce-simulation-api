@@ -5,7 +5,6 @@ import com.ihsanerben.ecommerce_simulation_api.exception.*;
 import com.ihsanerben.ecommerce_simulation_api.repository.*;
 import com.ihsanerben.ecommerce_simulation_api.security.TokenHashService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +12,9 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
+
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.FRONTEND_RESET_PASSWORD_URL;
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.PASSWORD_RESET_COOLDOWN_SECONDS;
 
 @Service
 @RequiredArgsConstructor
@@ -24,27 +26,24 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final TokenHashService hashService;
     private final EmailService emailService;
+    private final ApplicationConfigService applicationConfigService;
     private final SecureRandom secureRandom = new SecureRandom();
-
-    @Value("${app.frontend.reset-password-url}")
-    private String resetPasswordUrl;
-
-    @Value("${app.auth.password-reset-request-cooldown-seconds:60}")
-    private long requestCooldownSeconds;
 
     @Transactional
     public void requestReset(String email) {
         userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
             LocalDateTime now = LocalDateTime.now();
             if (resetTokenRepository.existsByUserIdAndCreatedAtAfter(
-                    user.getId(), now.minusSeconds(requestCooldownSeconds))) return;
+                    user.getId(), now.minusSeconds(
+                            applicationConfigService.getLong(PASSWORD_RESET_COOLDOWN_SECONDS)))) return;
             resetTokenRepository.deleteByUserId(user.getId());
             byte[] bytes = new byte[32];
             secureRandom.nextBytes(bytes);
             String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
             resetTokenRepository.save(PasswordResetToken.builder().user(user).tokenHash(hashService.hash(rawToken))
                     .createdAt(now).expiresAt(now.plusMinutes(15)).build());
-            emailService.sendPasswordReset(user.getEmail(), resetPasswordUrl + "?token=" + rawToken);
+            emailService.sendPasswordReset(user.getEmail(),
+                    applicationConfigService.getValue(FRONTEND_RESET_PASSWORD_URL) + "?token=" + rawToken);
         });
     }
 

@@ -16,7 +16,7 @@ public class LoginRateLimitService {
     private static final String WINDOW_SECONDS_KEY = "auth.login.window-seconds";
 
     private final ApplicationConfigService applicationConfigService;
-    private final InMemoryRateLimiter rateLimiter;
+    private final DatabaseRateLimiter rateLimiter;
 
     public <T> T execute(String ipAddress, Supplier<T> loginAttempt) {
         RateLimitPolicy policy = policy();

@@ -9,7 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 import java.util.*;
 import static org.assertj.core.api.Assertions.*;
@@ -26,12 +25,16 @@ class PasswordResetServiceTest {
     @Mock PasswordEncoder encoder;
     @Mock TokenHashService hashService;
     @Mock EmailService email;
+    @Mock ApplicationConfigService applicationConfigService;
     PasswordResetService service;
 
     @BeforeEach void setUp() {
-        service = new PasswordResetService(users, tokens, history, sessions, encoder, hashService, email);
-        ReflectionTestUtils.setField(service, "resetPasswordUrl", "https://frontend/reset-password");
-        ReflectionTestUtils.setField(service, "requestCooldownSeconds", 60L);
+        service = new PasswordResetService(
+                users, tokens, history, sessions, encoder, hashService, email, applicationConfigService);
+        lenient().when(applicationConfigService.getValue("frontend.reset-password-url"))
+                .thenReturn("https://frontend/reset-password");
+        lenient().when(applicationConfigService.getLong("auth.password-reset-request-cooldown-seconds"))
+                .thenReturn(60L);
     }
 
     @Test void requestReset_forUnknownEmailDoesNotRevealAccount() {

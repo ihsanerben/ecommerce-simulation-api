@@ -1,7 +1,6 @@
 package com.ihsanerben.ecommerce_simulation_api.security;
 
-import com.ihsanerben.ecommerce_simulation_api.config.AuthCookieProperties;
-import com.ihsanerben.ecommerce_simulation_api.config.JwtProperties;
+import com.ihsanerben.ecommerce_simulation_api.service.ApplicationConfigService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,17 +11,23 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.AUTH_COOKIE_DOMAIN;
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.AUTH_COOKIE_SAME_SITE;
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.AUTH_COOKIE_SECURE;
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.JWT_ACCESS_EXPIRATION_MS;
+import static com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys.JWT_REFRESH_EXPIRATION_MS;
+
 @Component
 @RequiredArgsConstructor
 public class TokenCookieService {
     public static final String ACCESS_COOKIE = "access_token";
     public static final String REFRESH_COOKIE = "refresh_token";
-    private final JwtProperties jwt;
-    private final AuthCookieProperties cookieProperties;
+    private final ApplicationConfigService applicationConfigService;
 
     public void writeTokens(HttpServletResponse response, String access, String refresh) {
-        add(response, ACCESS_COOKIE, access, "/", jwt.accessExpirationMs());
-        add(response, REFRESH_COOKIE, refresh, "/api/auth", jwt.refreshExpirationMs());
+        add(response, ACCESS_COOKIE, access, "/", applicationConfigService.getLong(JWT_ACCESS_EXPIRATION_MS));
+        add(response, REFRESH_COOKIE, refresh, "/api/auth",
+                applicationConfigService.getLong(JWT_REFRESH_EXPIRATION_MS));
     }
 
     public void clear(HttpServletResponse response) {
@@ -38,10 +43,13 @@ public class TokenCookieService {
 
     private void add(HttpServletResponse response, String name, String value, String path, long maxAgeMs) {
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
-                .httpOnly(true).secure(cookieProperties.secure()).sameSite(cookieProperties.sameSite())
+                .httpOnly(true)
+                .secure(applicationConfigService.getBoolean(AUTH_COOKIE_SECURE))
+                .sameSite(applicationConfigService.getValue(AUTH_COOKIE_SAME_SITE))
                 .path(path).maxAge(Duration.ofMillis(maxAgeMs));
-        if (cookieProperties.domain() != null && !cookieProperties.domain().isBlank()) {
-            builder.domain(cookieProperties.domain());
+        String domain = applicationConfigService.getValue(AUTH_COOKIE_DOMAIN);
+        if (!domain.isBlank()) {
+            builder.domain(domain);
         }
         response.addHeader("Set-Cookie", builder.build().toString());
     }

@@ -79,4 +79,40 @@ class ApplicationConfigServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("must be an integer");
     }
+
+    @Test
+    void getLong_whenValueIsNumeric_returnsLong() {
+        given(applicationConfigRepository.findByConfigKey("jwt.refresh-expiration-ms"))
+                .willReturn(Optional.of(ApplicationConfig.builder()
+                        .configKey("jwt.refresh-expiration-ms")
+                        .configValue("604800000")
+                        .build()));
+
+        assertThat(applicationConfigService.getLong("jwt.refresh-expiration-ms"))
+                .isEqualTo(604800000L);
+    }
+
+    @Test
+    void getBoolean_whenValueIsBoolean_returnsBoolean() {
+        given(applicationConfigRepository.findByConfigKey("auth.cookie.secure"))
+                .willReturn(Optional.of(ApplicationConfig.builder()
+                        .configKey("auth.cookie.secure")
+                        .configValue("true")
+                        .build()));
+
+        assertThat(applicationConfigService.getBoolean("auth.cookie.secure")).isTrue();
+    }
+
+    @Test
+    void getBoolean_whenValueIsInvalid_throwsIllegalStateException() {
+        given(applicationConfigRepository.findByConfigKey("auth.cookie.secure"))
+                .willReturn(Optional.of(ApplicationConfig.builder()
+                        .configKey("auth.cookie.secure")
+                        .configValue("yes")
+                        .build()));
+
+        assertThatThrownBy(() -> applicationConfigService.getBoolean("auth.cookie.secure"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("must be true or false");
+    }
 }
