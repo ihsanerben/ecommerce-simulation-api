@@ -1,5 +1,6 @@
 package com.ihsanerben.ecommerce_simulation_api.service;
 
+import com.ihsanerben.ecommerce_simulation_api.config.CacheNames;
 import com.ihsanerben.ecommerce_simulation_api.dto.response.OrderResponse;
 import com.ihsanerben.ecommerce_simulation_api.entity.Cart;
 import com.ihsanerben.ecommerce_simulation_api.entity.CartItem;
@@ -18,6 +19,8 @@ import com.ihsanerben.ecommerce_simulation_api.repository.OrderRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +40,10 @@ public class OrderService {
     private final OrderMapper orderMapper;
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_BY_ID, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_SEARCH, allEntries = true)
+    })
     public OrderResponse checkout(Long userId) {
         Cart cart = cartRepository.findByUserId(userId).orElse(null);
         if (cart == null || cart.getCartItems().isEmpty()) {
@@ -117,6 +124,10 @@ public class OrderService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_BY_ID, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_SEARCH, allEntries = true)
+    })
     public OrderResponse cancelOrder(Long userId, Long orderId) {
         Order order = findOwnedOrderOrThrow(userId, orderId);
 

@@ -1,5 +1,6 @@
 package com.ihsanerben.ecommerce_simulation_api.service;
 
+import com.ihsanerben.ecommerce_simulation_api.config.CacheNames;
 import com.ihsanerben.ecommerce_simulation_api.dto.request.ProductRequest;
 import com.ihsanerben.ecommerce_simulation_api.dto.response.ProductResponse;
 import com.ihsanerben.ecommerce_simulation_api.entity.Category;
@@ -8,11 +9,12 @@ import com.ihsanerben.ecommerce_simulation_api.exception.ResourceNotFoundExcepti
 import com.ihsanerben.ecommerce_simulation_api.mapper.ProductMapper;
 import com.ihsanerben.ecommerce_simulation_api.repository.CategoryRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.ProductRepository;
-import com.ihsanerben.ecommerce_simulation_api.repository.spec.ProductSpecifications;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,19 +26,22 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
+    private final ProductQueryService productQueryService;
 
     public Page<ProductResponse> searchProducts(Long categoryId, String search, Pageable pageable) {
-        Specification<Product> spec = Specification.where(ProductSpecifications.hasCategoryId(categoryId))
-                .and(ProductSpecifications.nameContains(search));
-
-        return productRepository.findAll(spec, pageable).map(productMapper::toResponse);
+        var cachedPage = productQueryService.searchProducts(categoryId, search, pageable);
+        return new PageImpl<>(cachedPage.content(), pageable, cachedPage.totalElements());
     }
 
     public ProductResponse getProductById(Long id) {
-        return productMapper.toResponse(findProductOrThrow(id));
+        return productQueryService.getProductById(id);
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_BY_ID, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_SEARCH, allEntries = true)
+    })
     public ProductResponse createProduct(ProductRequest request) {
         Category category = findCategoryOrThrow(request.categoryId());
         Product product = productMapper.toEntity(request, category);
@@ -45,6 +50,10 @@ public class ProductService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_BY_ID, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_SEARCH, allEntries = true)
+    })
     public ProductResponse updateProduct(Long id, ProductRequest request) {
         Product product = findProductOrThrow(id);
         Category category = findCategoryOrThrow(request.categoryId());
@@ -53,6 +62,10 @@ public class ProductService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_BY_ID, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_SEARCH, allEntries = true)
+    })
     public void deleteProduct(Long id) {
         Product product = findProductOrThrow(id);
         productRepository.delete(product);
