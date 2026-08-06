@@ -1,6 +1,7 @@
 package com.ihsanerben.ecommerce_simulation_api.service;
 
 import com.ihsanerben.ecommerce_simulation_api.dto.request.ProductRequest;
+import com.ihsanerben.ecommerce_simulation_api.dto.internal.CachedProductPage;
 import com.ihsanerben.ecommerce_simulation_api.dto.response.ProductResponse;
 import com.ihsanerben.ecommerce_simulation_api.entity.Category;
 import com.ihsanerben.ecommerce_simulation_api.entity.Product;
@@ -18,7 +19,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,11 +41,19 @@ class ProductServiceTest {
     @Mock
     private CategoryRepository categoryRepository;
 
+    @Mock
+    private ProductQueryService productQueryService;
+
     private ProductService productService;
 
     @BeforeEach
     void setUp() {
-        productService = new ProductService(productRepository, categoryRepository, new ProductMapper(new CategoryMapper()));
+        productService = new ProductService(
+                productRepository,
+                categoryRepository,
+                new ProductMapper(new CategoryMapper()),
+                productQueryService
+        );
     }
 
     private Category sampleCategory() {
@@ -69,11 +77,11 @@ class ProductServiceTest {
     @Test
     void searchProducts_returnsMappedPage() {
         Category category = sampleCategory();
-        Product product = sampleProduct(category);
         Pageable pageable = PageRequest.of(0, 20);
-        Page<Product> page = new PageImpl<>(List.of(product), pageable, 1);
+        ProductResponse product = new ProductMapper(new CategoryMapper()).toResponse(sampleProduct(category));
 
-        given(productRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(page);
+        given(productQueryService.searchProducts(null, null, pageable))
+                .willReturn(new CachedProductPage(List.of(product), 1));
 
         Page<ProductResponse> result = productService.searchProducts(null, null, pageable);
 
@@ -84,8 +92,8 @@ class ProductServiceTest {
     @Test
     void getProductById_whenExists_returnsProduct() {
         Category category = sampleCategory();
-        Product product = sampleProduct(category);
-        given(productRepository.findById(10L)).willReturn(Optional.of(product));
+        ProductResponse product = new ProductMapper(new CategoryMapper()).toResponse(sampleProduct(category));
+        given(productQueryService.getProductById(10L)).willReturn(product);
 
         ProductResponse response = productService.getProductById(10L);
 
@@ -95,7 +103,8 @@ class ProductServiceTest {
 
     @Test
     void getProductById_whenNotExists_throwsResourceNotFoundException() {
-        given(productRepository.findById(99L)).willReturn(Optional.empty());
+        given(productQueryService.getProductById(99L))
+                .willThrow(new ResourceNotFoundException("Product", "id", 99L));
 
         assertThatThrownBy(() -> productService.getProductById(99L))
                 .isInstanceOf(ResourceNotFoundException.class);

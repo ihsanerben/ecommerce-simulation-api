@@ -70,6 +70,11 @@ class ProductControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].name").value("Laptop"))
                 .andExpect(jsonPath("$.page.totalElements").value(1));
+
+        mockMvc.perform(get("/api/products"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].name").value("Laptop"))
+                .andExpect(jsonPath("$.page.totalElements").value(1));
     }
 
     @Test
