@@ -2,6 +2,7 @@ package com.ihsanerben.ecommerce_simulation_api.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.corundumstudio.socketio.SocketIOServer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class LiveNotificationService {
     private static final int BUFFER_SIZE_LIMIT_BYTES = 64 * 1024;
 
     private final ObjectMapper objectMapper;
+    private final SocketIOServer socketIOServer;
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
 
     public void register(WebSocketSession session) {
@@ -49,6 +51,8 @@ public class LiveNotificationService {
     }
 
     private void broadcast(LiveNotification notification) {
+        socketIOServer.getBroadcastOperations().sendEvent("live-notification", notification);
+
         TextMessage message;
         try {
             message = new TextMessage(objectMapper.writeValueAsString(notification));
