@@ -38,6 +38,26 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        enable.idempotence: true
+    consumer:
+      group-id: ecommerce-api
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.ihsanerben.ecommerce_simulation_api.messaging.event
+    listener:
+      missing-topics-fatal: false
+
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+
 app:
   jwt:
     secret: ${JWT_SECRET}
