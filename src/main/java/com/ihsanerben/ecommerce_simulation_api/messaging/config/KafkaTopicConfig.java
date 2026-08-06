@@ -16,4 +16,21 @@ public class KafkaTopicConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    NewTopic chatbotRequestTopic() {
+        return singlePartitionTopic(KafkaTopics.CHATBOT_REQUEST);
+    }
+
+    @Bean
+    NewTopic chatbotResponseTopic() {
+        return singlePartitionTopic(KafkaTopics.CHATBOT_RESPONSE);
+    }
+
+    private NewTopic singlePartitionTopic(String name) {
+        return TopicBuilder.name(name)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
 }
