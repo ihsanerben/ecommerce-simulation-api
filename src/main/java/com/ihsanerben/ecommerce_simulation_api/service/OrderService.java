@@ -14,6 +14,7 @@ import com.ihsanerben.ecommerce_simulation_api.exception.InsufficientStockExcept
 import com.ihsanerben.ecommerce_simulation_api.exception.InvalidOrderStateException;
 import com.ihsanerben.ecommerce_simulation_api.exception.ResourceNotFoundException;
 import com.ihsanerben.ecommerce_simulation_api.mapper.OrderMapper;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCreatedEvent;
 import com.ihsanerben.ecommerce_simulation_api.repository.CartRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.OrderRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
@@ -21,12 +22,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +42,7 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
     private final OrderMapper orderMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     @Caching(evict = {
@@ -89,6 +94,15 @@ public class OrderService {
 
         log.info("event=order_created orderId={} userId={} itemCount={}",
                 order.getId(), userId, order.getOrderItems().size());
+
+        applicationEventPublisher.publishEvent(new OrderCreatedEvent(
+                UUID.randomUUID(),
+                order.getId(),
+                userId,
+                order.getTotalAmount(),
+                order.getOrderItems().size(),
+                Instant.now()
+        ));
 
         return orderMapper.toResponse(order);
     }

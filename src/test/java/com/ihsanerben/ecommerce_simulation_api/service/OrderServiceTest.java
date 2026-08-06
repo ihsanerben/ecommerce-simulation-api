@@ -17,6 +17,7 @@ import com.ihsanerben.ecommerce_simulation_api.exception.ResourceNotFoundExcepti
 import com.ihsanerben.ecommerce_simulation_api.mapper.CategoryMapper;
 import com.ihsanerben.ecommerce_simulation_api.mapper.OrderMapper;
 import com.ihsanerben.ecommerce_simulation_api.mapper.ProductMapper;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCreatedEvent;
 import com.ihsanerben.ecommerce_simulation_api.repository.CartRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.OrderRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -52,13 +54,17 @@ class OrderServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+
     private OrderService orderService;
 
     @BeforeEach
     void setUp() {
         orderService = new OrderService(
                 orderRepository, cartRepository, userRepository,
-                new OrderMapper(new ProductMapper(new CategoryMapper())));
+                new OrderMapper(new ProductMapper(new CategoryMapper())),
+                applicationEventPublisher);
     }
 
     private Category sampleCategory() {
@@ -151,7 +157,11 @@ class OrderServiceTest {
                 CartItem.builder().id(2L).product(laptop).quantity(1).build());
         given(cartRepository.findByUserId(1L)).willReturn(Optional.of(cart));
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
-        given(orderRepository.save(any(Order.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.setId(50L);
+            return order;
+        });
 
         OrderResponse response = orderService.checkout(1L);
 
@@ -169,6 +179,12 @@ class OrderServiceTest {
         Order savedOrder = orderCaptor.getValue();
         assertThat(savedOrder.getOrderItems()).hasSize(2);
         assertThat(savedOrder.getOrderItems().get(1).getUnitPrice()).isEqualByComparingTo("1000.00");
+
+        ArgumentCaptor<OrderCreatedEvent> eventCaptor = ArgumentCaptor.forClass(OrderCreatedEvent.class);
+        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().orderId()).isEqualTo(50L);
+        assertThat(eventCaptor.getValue().totalAmount()).isEqualByComparingTo("1040.00");
+        assertThat(eventCaptor.getValue().itemCount()).isEqualTo(2);
     }
 
     @Test
