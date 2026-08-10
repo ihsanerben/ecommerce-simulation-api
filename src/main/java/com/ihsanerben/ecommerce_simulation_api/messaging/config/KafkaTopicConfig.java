@@ -11,10 +11,12 @@ public class KafkaTopicConfig {
 
     @Bean
     NewTopic orderCreatedTopic() {
-        return TopicBuilder.name(KafkaTopics.ORDER_CREATED)
-                .partitions(1)
-                .replicas(1)
-                .build();
+        return singlePartitionTopic(KafkaTopics.ORDER_CREATED);
+    }
+
+    @Bean
+    NewTopic orderApprovedTopic() {
+        return singlePartitionTopic(KafkaTopics.ORDER_APPROVED);
     }
 
     @Bean

@@ -17,7 +17,7 @@ public class SocketIOServerConfig {
 
     private final ApplicationConfigService applicationConfigService;
 
-    @Value("${app.socket-io.port:9092}")
+    @Value("${app.socket-io.port:9094}")
     private int port;
 
     @Bean(destroyMethod = "stop")

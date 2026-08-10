@@ -18,6 +18,7 @@ import com.ihsanerben.ecommerce_simulation_api.mapper.CategoryMapper;
 import com.ihsanerben.ecommerce_simulation_api.mapper.OrderMapper;
 import com.ihsanerben.ecommerce_simulation_api.mapper.ProductMapper;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCreatedEvent;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderApprovedEvent;
 import com.ihsanerben.ecommerce_simulation_api.repository.CartRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.OrderRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
@@ -183,8 +184,12 @@ class OrderServiceTest {
         ArgumentCaptor<OrderCreatedEvent> eventCaptor = ArgumentCaptor.forClass(OrderCreatedEvent.class);
         verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().orderId()).isEqualTo(50L);
+        assertThat(eventCaptor.getValue().recipientEmail()).isEqualTo("ihsan@example.com");
         assertThat(eventCaptor.getValue().totalAmount()).isEqualByComparingTo("1040.00");
         assertThat(eventCaptor.getValue().itemCount()).isEqualTo(2);
+        assertThat(eventCaptor.getValue().items())
+                .extracting("productName")
+                .containsExactly("Mouse", "Laptop");
     }
 
     @Test
@@ -247,6 +252,26 @@ class OrderServiceTest {
 
         assertThat(response.approved()).isTrue();
         assertThat(order.isApproved()).isTrue();
+
+        ArgumentCaptor<OrderApprovedEvent> eventCaptor = ArgumentCaptor.forClass(OrderApprovedEvent.class);
+        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().orderId()).isEqualTo(1L);
+        assertThat(eventCaptor.getValue().recipientEmail()).isEqualTo("ihsan@example.com");
+    }
+
+    @Test
+    void approveOrder_whenAlreadyApproved_doesNotPublishDuplicateEvent() {
+        Order order = Order.builder()
+                .id(1L).user(sampleUser(1L)).orderItems(new ArrayList<>())
+                .totalAmount(BigDecimal.TEN).status(OrderStatus.PENDING).approved(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+        given(orderRepository.findByIdAndUserId(1L, 1L)).willReturn(Optional.of(order));
+
+        OrderResponse response = orderService.approveOrder(1L, 1L);
+
+        assertThat(response.approved()).isTrue();
+        verify(applicationEventPublisher, never()).publishEvent(any(OrderApprovedEvent.class));
     }
 
     @Test

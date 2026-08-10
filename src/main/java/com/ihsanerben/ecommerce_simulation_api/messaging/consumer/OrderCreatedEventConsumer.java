@@ -15,7 +15,7 @@ public class OrderCreatedEventConsumer {
 
     private final LiveNotificationService liveNotificationService;
 
-    @KafkaListener(topics = KafkaTopics.ORDER_CREATED)
+    @KafkaListener(topics = KafkaTopics.ORDER_CREATED, groupId = "order-live-notification")
     public void consume(OrderCreatedEvent event) {
         log.info("event=order_created_consumed eventId={} orderId={} userId={} itemCount={}",
                 event.eventId(), event.orderId(), event.userId(), event.itemCount());

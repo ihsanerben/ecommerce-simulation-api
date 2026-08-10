@@ -15,6 +15,8 @@ import com.ihsanerben.ecommerce_simulation_api.exception.InvalidOrderStateExcept
 import com.ihsanerben.ecommerce_simulation_api.exception.ResourceNotFoundException;
 import com.ihsanerben.ecommerce_simulation_api.mapper.OrderMapper;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCreatedEvent;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderApprovedEvent;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderItemSnapshot;
 import com.ihsanerben.ecommerce_simulation_api.repository.CartRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.OrderRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
@@ -99,8 +101,15 @@ public class OrderService {
                 UUID.randomUUID(),
                 order.getId(),
                 userId,
+                user.getEmail(),
                 order.getTotalAmount(),
                 order.getOrderItems().size(),
+                order.getOrderItems().stream()
+                        .map(item -> new OrderItemSnapshot(
+                                item.getProduct().getName(),
+                                item.getQuantity(),
+                                item.getUnitPrice()))
+                        .toList(),
                 Instant.now()
         ));
 
@@ -133,7 +142,18 @@ public class OrderService {
             throw new InvalidOrderStateException("A cancelled order cannot be approved.");
         }
 
+        if (order.isApproved()) {
+            return orderMapper.toResponse(order);
+        }
+
         order.setApproved(true);
+        applicationEventPublisher.publishEvent(new OrderApprovedEvent(
+                UUID.randomUUID(),
+                order.getId(),
+                order.getUser().getId(),
+                order.getUser().getEmail(),
+                Instant.now()
+        ));
         return orderMapper.toResponse(order);
     }
 
