@@ -46,8 +46,8 @@ public class RedisCacheConfig implements CachingConfigurer {
         Map<String, RedisCacheConfiguration> cacheConfigurations = Map.of(
                 CacheNames.CATEGORIES, defaults.entryTtl(Duration.ofHours(1)),
                 CacheNames.CATEGORY_BY_ID, defaults.entryTtl(Duration.ofHours(1)),
-                CacheNames.PRODUCT_BY_ID, defaults.entryTtl(Duration.ofMinutes(5)),
-                CacheNames.PRODUCT_SEARCH, defaults.entryTtl(Duration.ofMinutes(1))
+                CacheNames.PRODUCT_BY_ID, defaults.entryTtl(Duration.ofMinutes(15)),
+                CacheNames.PRODUCT_SEARCH, defaults.entryTtl(Duration.ofMinutes(10))
         );
 
         return RedisCacheManager.builder(connectionFactory)

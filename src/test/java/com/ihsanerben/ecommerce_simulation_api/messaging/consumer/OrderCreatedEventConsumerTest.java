@@ -1,6 +1,7 @@
 package com.ihsanerben.ecommerce_simulation_api.messaging.consumer;
 
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCreatedEvent;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderItemSnapshot;
 import com.ihsanerben.ecommerce_simulation_api.websocket.LiveNotificationService;
 import org.junit.jupiter.api.Test;
 
@@ -21,8 +22,10 @@ class OrderCreatedEventConsumerTest {
                 UUID.randomUUID(),
                 1L,
                 2L,
+                "buyer@example.com",
                 BigDecimal.TEN,
                 1,
+                java.util.List.of(new OrderItemSnapshot("Mouse", 1, BigDecimal.TEN)),
                 Instant.now()
         );
 
