@@ -27,7 +27,12 @@ class LiquibaseMigrationIT extends AbstractIntegrationTest {
                 "001-baseline-schema",
                 "002-create-application-configs",
                 "003-seed-login-max-attempts",
-                "004-seed-login-window-seconds");
+                "004-seed-login-window-seconds",
+                "009-create-audit-events");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'audit_events'",
+                Integer.class))
+                .isEqualTo(1);
         assertThat(applicationConfigRepository.findByConfigKey("auth.login.max-attempts"))
                 .isPresent()
                 .get()
