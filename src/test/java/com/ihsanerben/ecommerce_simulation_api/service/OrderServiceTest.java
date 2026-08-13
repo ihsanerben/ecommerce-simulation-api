@@ -19,6 +19,7 @@ import com.ihsanerben.ecommerce_simulation_api.mapper.OrderMapper;
 import com.ihsanerben.ecommerce_simulation_api.mapper.ProductMapper;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCreatedEvent;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderApprovedEvent;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCancelledEvent;
 import com.ihsanerben.ecommerce_simulation_api.repository.CartRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.OrderRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
@@ -38,6 +39,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -190,6 +192,11 @@ class OrderServiceTest {
         assertThat(eventCaptor.getValue().items())
                 .extracting("productName")
                 .containsExactly("Mouse", "Laptop");
+        assertThat(eventCaptor.getValue().items())
+                .extracting("productId", "remainingStock")
+                .containsExactly(
+                        tuple(1L, 98),
+                        tuple(2L, 4));
     }
 
     @Test
@@ -337,5 +344,11 @@ class OrderServiceTest {
 
         assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(laptop.getStockQuantity()).isEqualTo(5);
+
+        ArgumentCaptor<OrderCancelledEvent> eventCaptor = ArgumentCaptor.forClass(OrderCancelledEvent.class);
+        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().orderId()).isEqualTo(1L);
+        assertThat(eventCaptor.getValue().userId()).isEqualTo(1L);
+        assertThat(eventCaptor.getValue().recipientEmail()).isEqualTo("ihsan@example.com");
     }
 }

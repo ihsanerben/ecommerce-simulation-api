@@ -3,6 +3,7 @@ package com.ihsanerben.ecommerce_simulation_api.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ihsanerben.ecommerce_simulation_api.entity.AuditEvent;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderApprovedEvent;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCancelledEvent;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCreatedEvent;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderItemSnapshot;
 import com.ihsanerben.ecommerce_simulation_api.repository.AuditEventRepository;
@@ -42,7 +43,7 @@ class AuditTrailServiceTest {
                 "buyer@example.com",
                 new BigDecimal("125.00"),
                 1,
-                List.of(new OrderItemSnapshot("Keyboard", 1, new BigDecimal("125.00"))),
+                List.of(new OrderItemSnapshot(20L, "Keyboard", 1, new BigDecimal("125.00"), 4)),
                 occurredAt);
 
         auditTrailService.record(event);
@@ -70,5 +71,20 @@ class AuditTrailServiceTest {
         auditTrailService.record(event);
 
         verify(auditEventRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void recordCancelledPersistsCancellationAudit() {
+        UUID eventId = UUID.randomUUID();
+        OrderCancelledEvent event = new OrderCancelledEvent(
+                eventId, 10L, 2L, "buyer@example.com", Instant.parse("2026-08-13T12:00:00Z"));
+
+        auditTrailService.record(event);
+
+        ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(auditEventRepository).save(captor.capture());
+        assertThat(captor.getValue().getEventId()).isEqualTo(eventId);
+        assertThat(captor.getValue().getEventType()).isEqualTo(AuditTrailService.ORDER_CANCELLED);
+        assertThat(captor.getValue().getPayload()).contains("CANCELLED");
     }
 }

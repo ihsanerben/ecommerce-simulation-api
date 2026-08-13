@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ihsanerben.ecommerce_simulation_api.entity.AuditEvent;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderApprovedEvent;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCancelledEvent;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCreatedEvent;
 import com.ihsanerben.ecommerce_simulation_api.repository.AuditEventRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class AuditTrailService {
 
     public static final String ORDER_CREATED = "ORDER_CREATED";
     public static final String ORDER_APPROVED = "ORDER_APPROVED";
+    public static final String ORDER_CANCELLED = "ORDER_CANCELLED";
     private static final String ORDER = "ORDER";
 
     private final AuditEventRepository auditEventRepository;
@@ -40,6 +42,12 @@ public class AuditTrailService {
     public void record(OrderApprovedEvent event) {
         persist(event.eventId(), ORDER_APPROVED, event.orderId(), event.userId(), event.occurredAt(),
                 Map.of("approved", true));
+    }
+
+    @Transactional
+    public void record(OrderCancelledEvent event) {
+        persist(event.eventId(), ORDER_CANCELLED, event.orderId(), event.userId(), event.occurredAt(),
+                Map.of("status", "CANCELLED"));
     }
 
     private void persist(UUID eventId, String eventType, Long aggregateId, Long actorUserId,

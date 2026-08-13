@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-create-low-stock-alerts
+      author: ihsanerben
+      comment: Persist low-stock alerts produced from order-created Kafka events.
+      changes:
+        - createTable:
+            tableName: low_stock_alerts
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: remaining_stock
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: low_stock_alerts
+            columnNames: event_id, product_id
+            constraintName: uk_low_stock_alerts_event_product
+        - createIndex:
+            tableName: low_stock_alerts
+            indexName: idx_low_stock_alerts_product
+            columns:
+              - column:
+                  name: product_id
+      rollback:
+        - dropTable:
+            tableName: low_stock_alerts

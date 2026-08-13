@@ -1,6 +1,7 @@
 package com.ihsanerben.ecommerce_simulation_api.messaging.consumer;
 
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderApprovedEvent;
+import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCancelledEvent;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderCreatedEvent;
 import com.ihsanerben.ecommerce_simulation_api.messaging.event.OrderItemSnapshot;
 import com.ihsanerben.ecommerce_simulation_api.service.AuditTrailService;
@@ -28,7 +29,7 @@ class OrderAuditConsumerTest {
                 "buyer@example.com",
                 new BigDecimal("125.00"),
                 1,
-                List.of(new OrderItemSnapshot("Keyboard", 1, new BigDecimal("125.00"))),
+                List.of(new OrderItemSnapshot(20L, "Keyboard", 1, new BigDecimal("125.00"), 4)),
                 Instant.now());
 
         consumer.consumeCreated(event);
@@ -42,6 +43,16 @@ class OrderAuditConsumerTest {
                 UUID.randomUUID(), 10L, 2L, "buyer@example.com", Instant.now());
 
         consumer.consumeApproved(event);
+
+        verify(auditTrailService).record(event);
+    }
+
+    @Test
+    void cancelledEventIsDelegatedToAuditTrail() {
+        OrderCancelledEvent event = new OrderCancelledEvent(
+                UUID.randomUUID(), 10L, 2L, "buyer@example.com", Instant.now());
+
+        consumer.consumeCancelled(event);
 
         verify(auditTrailService).record(event);
     }

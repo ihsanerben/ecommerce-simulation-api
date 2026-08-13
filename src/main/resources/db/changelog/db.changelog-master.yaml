@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/changes/006-seed-operational-configs.yaml
   - include:
       file: db/changelog/changes/007-audit-events.yaml
+  - include:
+      file: db/changelog/changes/008-low-stock-alerts.yaml
