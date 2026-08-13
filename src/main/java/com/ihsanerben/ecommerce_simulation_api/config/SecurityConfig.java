@@ -53,7 +53,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh",
                                 "/api/auth/logout", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/csrf").permitAll()
                         .requestMatchers("/api/chatbot/messages").permitAll()
-                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**", "/api/products/**").permitAll()
                         .anyRequest().authenticated())
