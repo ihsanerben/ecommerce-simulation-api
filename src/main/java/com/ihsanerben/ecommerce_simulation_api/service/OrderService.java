@@ -94,8 +94,7 @@ public class OrderService {
         orderRepository.save(order);
         cart.getCartItems().clear();
 
-        log.info("event=order_created orderId={} userId={} itemCount={}",
-                order.getId(), userId, order.getOrderItems().size());
+        log.info("event=order_created orderId={} userId={} itemCount={}", order.getId(), userId, order.getOrderItems().size());
 
         applicationEventPublisher.publishEvent(new OrderCreatedEvent(
                 UUID.randomUUID(),
