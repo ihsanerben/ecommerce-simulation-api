@@ -19,16 +19,6 @@ public class KafkaTopicConfig {
         return singlePartitionTopic(KafkaTopics.ORDER_APPROVED);
     }
 
-    @Bean
-    NewTopic chatbotRequestTopic() {
-        return singlePartitionTopic(KafkaTopics.CHATBOT_REQUEST);
-    }
-
-    @Bean
-    NewTopic chatbotResponseTopic() {
-        return singlePartitionTopic(KafkaTopics.CHATBOT_RESPONSE);
-    }
-
     private NewTopic singlePartitionTopic(String name) {
         return TopicBuilder.name(name)
                 .partitions(1)

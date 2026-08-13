@@ -17,7 +17,7 @@ class ChatbotControllerIT extends AbstractIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    void sendMessage_usesKafkaRequestResponseFlow() throws Exception {
+    void sendMessage_returnsReplyDirectly() throws Exception {
         mockMvc.perform(post("/api/chatbot/messages")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)

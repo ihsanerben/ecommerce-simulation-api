@@ -1,6 +1,5 @@
 package com.ihsanerben.ecommerce_simulation_api.exception;
 
-import com.ihsanerben.ecommerce_simulation_api.chatbot.exception.ChatbotUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -134,12 +133,6 @@ public class GlobalExceptionHandler {
                 request.getMethod(), request.getRequestURI(), ex.getClass().getSimpleName());
         return buildResponse(HttpStatus.SERVICE_UNAVAILABLE,
                 "Email service is temporarily unavailable. Please try again later.", request);
-    }
-
-    @ExceptionHandler(ChatbotUnavailableException.class)
-    public ResponseEntity<ErrorResponse> handleChatbotUnavailable(ChatbotUnavailableException ex,
-            HttpServletRequest request) {
-        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
