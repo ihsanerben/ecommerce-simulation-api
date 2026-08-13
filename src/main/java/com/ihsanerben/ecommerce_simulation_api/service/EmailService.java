@@ -58,6 +58,13 @@ public class EmailService {
                 "%d numaralı siparişiniz onaylandı ve hazırlanıyor.".formatted(orderId));
     }
 
+    public void sendOrderCancelled(String recipient, Long orderId) {
+        send(
+                recipient,
+                "Siparişiniz iptal edildi (#%d)".formatted(orderId),
+                "%d numaralı siparişiniz iptal edildi.".formatted(orderId));
+    }
+
     private void send(String recipient, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(recipient);

@@ -19,6 +19,11 @@ public class KafkaTopicConfig {
         return singlePartitionTopic(KafkaTopics.ORDER_APPROVED);
     }
 
+    @Bean
+    NewTopic orderCancelledTopic() {
+        return singlePartitionTopic(KafkaTopics.ORDER_CANCELLED);
+    }
+
     private NewTopic singlePartitionTopic(String name) {
         return TopicBuilder.name(name)
                 .partitions(1)

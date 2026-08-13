@@ -34,7 +34,7 @@ class EmailServiceTest {
                 "buyer@example.com",
                 10L,
                 new BigDecimal("250.00"),
-                List.of(new OrderItemSnapshot("Keyboard", 2, new BigDecimal("125.00"))));
+                List.of(new OrderItemSnapshot(20L, "Keyboard", 2, new BigDecimal("125.00"), 4)));
 
         SimpleMailMessage message = capturedMessage();
         assertThat(message.getSubject()).isEqualTo("Faturanız (#10)");
@@ -48,6 +48,16 @@ class EmailServiceTest {
         SimpleMailMessage message = capturedMessage();
         assertThat(message.getSubject()).isEqualTo("Siparişiniz hazırlanıyor (#10)");
         assertThat(message.getText()).contains("10 numaralı siparişiniz onaylandı");
+    }
+
+    @Test
+    void sendsOrderCancelledEmail() {
+        emailService.sendOrderCancelled("buyer@example.com", 10L);
+
+        SimpleMailMessage message = capturedMessage();
+        assertThat(message.getTo()).containsExactly("buyer@example.com");
+        assertThat(message.getSubject()).isEqualTo("Siparişiniz iptal edildi (#10)");
+        assertThat(message.getText()).contains("10 numaralı siparişiniz iptal edildi");
     }
 
     private SimpleMailMessage capturedMessage() {
