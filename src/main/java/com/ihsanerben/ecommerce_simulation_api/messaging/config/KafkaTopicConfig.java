@@ -24,6 +24,11 @@ public class KafkaTopicConfig {
         return singlePartitionTopic(KafkaTopics.ORDER_CANCELLED);
     }
 
+    @Bean
+    NewTopic chatbotInteractionTopic() {
+        return singlePartitionTopic(KafkaTopics.CHATBOT_INTERACTION);
+    }
+
     private NewTopic singlePartitionTopic(String name) {
         return TopicBuilder.name(name)
                 .partitions(1)
