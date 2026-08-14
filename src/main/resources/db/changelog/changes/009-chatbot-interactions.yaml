@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-create-chatbot-interactions
+      author: ihsanerben
+      comment: Persist chatbot usage statistics consumed asynchronously from Kafka.
+      changes:
+        - createTable:
+            tableName: chatbot_interactions
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_chatbot_interactions_event_id
+              - column:
+                  name: question
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: matched
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recorded_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: chatbot_interactions
+            indexName: idx_chatbot_interactions_category
+            columns:
+              - column:
+                  name: category
+        - createIndex:
+            tableName: chatbot_interactions
+            indexName: idx_chatbot_interactions_occurred_at
+            columns:
+              - column:
+                  name: occurred_at
+                  descending: true
+      rollback:
+        - dropTable:
+            tableName: chatbot_interactions
