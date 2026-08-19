@@ -30,7 +30,8 @@ class LiquibaseMigrationIT extends AbstractIntegrationTest {
                 "004-seed-login-window-seconds",
                 "009-create-audit-events",
                 "010-create-low-stock-alerts",
-                "011-create-chatbot-interactions");
+                "011-create-chatbot-interactions",
+                "012-seed-public-ui-configs");
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'audit_events'",
                 Integer.class))
@@ -53,5 +54,10 @@ class LiquibaseMigrationIT extends AbstractIntegrationTest {
                 .get()
                 .extracting(config -> config.getConfigValue())
                 .isEqualTo("60");
+        assertThat(applicationConfigRepository.findByConfigKey("ui.primary-color"))
+                .isPresent()
+                .get()
+                .extracting(config -> config.getConfigValue())
+                .isEqualTo("#f24391");
     }
 }
