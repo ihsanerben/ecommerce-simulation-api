@@ -2,6 +2,9 @@ package com.ihsanerben.ecommerce_simulation_api.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ihsanerben.ecommerce_simulation_api.exception.ErrorResponse;
+import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes;
+import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageService;
+import com.ihsanerben.ecommerce_simulation_api.exception.message.ResolvedErrorMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
     private final ObjectMapper objectMapper;
+    private final ErrorMessageService errorMessageService;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
@@ -26,13 +30,12 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
         HttpStatus status = HttpStatus.FORBIDDEN;
         boolean csrfFailure = exception instanceof MissingCsrfTokenException
                 || exception instanceof InvalidCsrfTokenException;
-        String message = csrfFailure
-                ? "CSRF token is missing or invalid. Reload Swagger UI or initialize CSRF protection and retry."
-                : "You do not have permission to perform this action.";
+        String code = csrfFailure ? ErrorMessageCodes.CSRF_TOKEN_INVALID : ErrorMessageCodes.ACCESS_DENIED;
+        ResolvedErrorMessage errorMessage = errorMessageService.resolve(code);
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(), new ErrorResponse(
                 status.value(), status.getReasonPhrase(),
-                message, request.getRequestURI()));
+                errorMessage.code(), errorMessage.message(), request.getRequestURI()));
     }
 }

@@ -1,6 +1,10 @@
 package com.ihsanerben.ecommerce_simulation_api.exception;
 
+import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes;
+import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageService;
+import com.ihsanerben.ecommerce_simulation_api.exception.message.ResolvedErrorMessage;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,51 +28,56 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 @Slf4j
 public class GlobalExceptionHandler {
 
+    private final ErrorMessageService errorMessageService;
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        return buildResponse(HttpStatus.NOT_FOUND, ErrorMessageCodes.RESOURCE_NOT_FOUND, request);
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateResource(DuplicateResourceException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return buildResponse(HttpStatus.CONFLICT, ErrorMessageCodes.DUPLICATE_RESOURCE, request);
     }
 
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ErrorResponse> handleInsufficientStock(InsufficientStockException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return buildResponse(HttpStatus.CONFLICT, ErrorMessageCodes.INSUFFICIENT_STOCK, request);
     }
 
     @ExceptionHandler(EmptyCartException.class)
     public ResponseEntity<ErrorResponse> handleEmptyCart(EmptyCartException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return buildResponse(HttpStatus.BAD_REQUEST, ErrorMessageCodes.EMPTY_CART, request);
     }
 
     @ExceptionHandler(InvalidOrderStateException.class)
     public ResponseEntity<ErrorResponse> handleInvalidOrderState(InvalidOrderStateException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return buildResponse(HttpStatus.CONFLICT, ErrorMessageCodes.INVALID_ORDER_STATE, request);
     }
 
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        return buildResponse(HttpStatus.UNAUTHORIZED, ErrorMessageCodes.INVALID_TOKEN, request);
     }
 
     @ExceptionHandler(PasswordReuseException.class)
     public ResponseEntity<ErrorResponse> handlePasswordReuse(PasswordReuseException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return buildResponse(HttpStatus.CONFLICT, ErrorMessageCodes.PASSWORD_REUSE, request);
     }
 
     @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<ErrorResponse> handleRateLimitExceeded(RateLimitExceededException ex,
             HttpServletRequest request) {
+        ResolvedErrorMessage errorMessage = errorMessageService.resolve(ErrorMessageCodes.RATE_LIMIT_EXCEEDED);
         ErrorResponse body = new ErrorResponse(
                 HttpStatus.TOO_MANY_REQUESTS.value(),
                 HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
-                ex.getMessage(),
+                errorMessage.code(),
+                errorMessage.message(),
                 request.getRequestURI());
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .header("Retry-After", Long.toString(ex.getRetryAfterSeconds()))
@@ -77,72 +86,61 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleMalformedRequestBody(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST, "Malformed request body.", request);
+        return buildResponse(HttpStatus.BAD_REQUEST, ErrorMessageCodes.MALFORMED_REQUEST_BODY, request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
-        String message = "Invalid value '%s' for parameter '%s'.".formatted(ex.getValue(), ex.getName());
-        return buildResponse(HttpStatus.BAD_REQUEST, message, request);
+        return buildResponse(HttpStatus.BAD_REQUEST, ErrorMessageCodes.TYPE_MISMATCH, request);
     }
 
     @ExceptionHandler(PropertyReferenceException.class)
     public ResponseEntity<ErrorResponse> handleInvalidSortProperty(PropertyReferenceException ex,
             HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST,
-                "Invalid sort property '%s'.".formatted(ex.getPropertyName()), request);
+        return buildResponse(HttpStatus.BAD_REQUEST, ErrorMessageCodes.INVALID_SORT_PROPERTY, request);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex,
             HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST,
-                "Required parameter '%s' is missing.".formatted(ex.getParameterName()), request);
+        return buildResponse(HttpStatus.BAD_REQUEST, ErrorMessageCodes.MISSING_PARAMETER, request);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex,
             HttpServletRequest request) {
-        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED,
-                "HTTP method '%s' is not supported for this endpoint.".formatted(ex.getMethod()), request);
+        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, ErrorMessageCodes.METHOD_NOT_SUPPORTED, request);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex,
             HttpServletRequest request) {
-        return buildResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-                "Content type '%s' is not supported.".formatted(ex.getContentType()), request);
+        return buildResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ErrorMessageCodes.MEDIA_TYPE_NOT_SUPPORTED, request);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex,
-            HttpServletRequest request) {
-        return buildResponse(HttpStatus.NOT_FOUND, "The requested endpoint was not found.", request);
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.NOT_FOUND, ErrorMessageCodes.ENDPOINT_NOT_FOUND, request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex,
-            HttpServletRequest request) {
-        return buildResponse(HttpStatus.CONFLICT,
-                "The operation conflicts with existing or related data.", request);
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ErrorMessageCodes.DATA_INTEGRITY_VIOLATION, request);
     }
 
     @ExceptionHandler(MailException.class)
     public ResponseEntity<ErrorResponse> handleMailFailure(MailException ex, HttpServletRequest request) {
-        log.error("event=mail_delivery_failed method={} path={} exception={}",
-                request.getMethod(), request.getRequestURI(), ex.getClass().getSimpleName());
-        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE,
-                "Email service is temporarily unavailable. Please try again later.", request);
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ErrorMessageCodes.MAIL_FAILURE, request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid username or password.", request);
+        return buildResponse(HttpStatus.UNAUTHORIZED, ErrorMessageCodes.BAD_CREDENTIALS, request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.FORBIDDEN, "You do not have permission to perform this action.", request);
+        return buildResponse(HttpStatus.FORBIDDEN, ErrorMessageCodes.ACCESS_DENIED, request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -151,10 +149,12 @@ public class GlobalExceptionHandler {
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             fieldErrors.put(error.getField(), error.getDefaultMessage());
         }
+        ResolvedErrorMessage errorMessage = errorMessageService.resolve(ErrorMessageCodes.VALIDATION_FAILED);
         ErrorResponse body = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                "Validation failed",
+                errorMessage.code(),
+                errorMessage.message(),
                 request.getRequestURI(),
                 fieldErrors
         );
@@ -163,13 +163,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
-        log.error("event=unhandled_exception method={} path={} exception={}",
-                request.getMethod(), request.getRequestURI(), ex.getClass().getSimpleName(), ex);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.", request);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ErrorMessageCodes.UNEXPECTED_ERROR, request);
     }
 
-    private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message, HttpServletRequest request) {
-        ErrorResponse body = new ErrorResponse(status.value(), status.getReasonPhrase(), message, request.getRequestURI());
+    private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String code, HttpServletRequest request) {
+        ResolvedErrorMessage errorMessage = errorMessageService.resolve(code);
+        ErrorResponse body = new ErrorResponse(
+                status.value(),
+                status.getReasonPhrase(),
+                errorMessage.code(),
+                errorMessage.message(),
+                request.getRequestURI());
         return ResponseEntity.status(status).body(body);
     }
 }
