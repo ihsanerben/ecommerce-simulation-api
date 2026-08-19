@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-seed-public-ui-configs
+      author: ihsanerben
+      comment: Seed public UI settings managed through application config.
+      changes:
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: ui.logo-url }
+              - column: { name: config_value, value: "https://www.yerkoygazetesi.com.tr/wp-content/uploads/2024/11/n11.webp" }
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: ui.primary-color }
+              - column: { name: config_value, value: "#f24391" }
+        - insert:
+            tableName: application_configs
+            columns:
+              - column: { name: config_key, value: ui.support-url }
+              - column: { name: config_value, value: "https://www.n11.com/destek-merkezi" }
+      rollback:
+        - delete:
+            tableName: application_configs
+            where: config_key IN ('ui.logo-url', 'ui.primary-color', 'ui.support-url')

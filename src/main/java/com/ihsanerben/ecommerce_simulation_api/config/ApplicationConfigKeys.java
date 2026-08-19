@@ -4,6 +4,7 @@ public final class ApplicationConfigKeys {
 
     public static final String JWT_ACCESS_EXPIRATION_MS = "jwt.access-expiration-ms";
     public static final String JWT_REFRESH_EXPIRATION_MS = "jwt.refresh-expiration-ms";
+
     public static final String AUTH_COOKIE_SECURE = "auth.cookie.secure";
     public static final String AUTH_COOKIE_SAME_SITE = "auth.cookie.same-site";
     public static final String AUTH_COOKIE_DOMAIN = "auth.cookie.domain";
@@ -11,6 +12,10 @@ public final class ApplicationConfigKeys {
             "auth.password-reset-request-cooldown-seconds";
     public static final String FRONTEND_RESET_PASSWORD_URL = "frontend.reset-password-url";
     public static final String SECURITY_ALLOWED_ORIGIN = "security.allowed-origin";
+
+    public static final String UI_LOGO_URL = "ui.logo-url";
+    public static final String UI_PRIMARY_COLOR = "ui.primary-color";
+    public static final String UI_SUPPORT_URL = "ui.support-url";
 
     private ApplicationConfigKeys() {
     }
