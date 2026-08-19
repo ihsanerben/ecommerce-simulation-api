@@ -7,16 +7,18 @@ public record ErrorResponse(
         LocalDateTime timestamp,
         int status,
         String error,
+        String code,
         String message,
         String path,
         Map<String, String> fieldErrors
 ) {
 
-    public ErrorResponse(int status, String error, String message, String path) {
-        this(LocalDateTime.now(), status, error, message, path, null);
+    public ErrorResponse(int status, String error, String code, String message, String path) {
+        this(LocalDateTime.now(), status, error, code, message, path, null);
     }
 
-    public ErrorResponse(int status, String error, String message, String path, Map<String, String> fieldErrors) {
-        this(LocalDateTime.now(), status, error, message, path, fieldErrors);
+    public ErrorResponse(int status, String error, String code, String message, String path,
+            Map<String, String> fieldErrors) {
+        this(LocalDateTime.now(), status, error, code, message, path, fieldErrors);
     }
 }

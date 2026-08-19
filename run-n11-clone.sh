@@ -11,8 +11,21 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-set -a
-source "$ENV_FILE"
-set +a
+while IFS= read -r line || [[ -n "$line" ]]; do
+  line="${line%$'\r'}"
+
+  if [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]]; then
+    continue
+  fi
+
+  if [[ ! "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+    echo "Error: .env içinde geçersiz satır: $line" >&2
+    exit 1
+  fi
+
+  key="${line%%=*}"
+  value="${line#*=}"
+  export "$key=$value"
+done < "$ENV_FILE"
 
 exec "$PROJECT_DIR/mvnw" spring-boot:run

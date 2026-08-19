@@ -36,6 +36,8 @@ public class ProductController {
 
     private final ProductService productService;
 
+    // GET /api/products ?categoryId=7 &search=kulaklık &sort=price,asc &page=2 &size=10
+    // SELECT *   FROM products   WHERE category_id = 7     AND LOWER(name) LIKE '%lap%'   ORDER BY price ASC   LIMIT 10   OFFSET 20;
     @GetMapping
     @Operation(summary = "List products", description = "Supports pagination, filtering by category, and searching by name.")
     @ApiResponse(responseCode = "200", description = "Paginated product list")

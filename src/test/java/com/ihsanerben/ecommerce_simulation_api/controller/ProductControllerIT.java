@@ -107,7 +107,7 @@ class ProductControllerIT extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/products").param("sort", "unknownField,asc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.message").value("Invalid sort property 'unknownField'."));
+                .andExpect(jsonPath("$.message").value("The requested sort property is invalid."));
     }
 
     @Test

@@ -3,8 +3,12 @@ package com.ihsanerben.ecommerce_simulation_api.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ihsanerben.ecommerce_simulation_api.AbstractIntegrationTest;
 import com.ihsanerben.ecommerce_simulation_api.dto.request.RegisterRequest;
+import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes;
+import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageDocument;
+import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageRepository;
 import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -20,10 +24,25 @@ class ErrorResponseIT extends AbstractIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @Autowired UserRepository userRepository;
+    @Autowired ErrorMessageRepository errorMessageRepository;
+
+    @BeforeEach
+    void seedRequiredErrorMessage() {
+        errorMessageRepository.findByCode(ErrorMessageCodes.MALFORMED_REQUEST_BODY)
+                .orElseGet(() -> errorMessageRepository.save(ErrorMessageDocument.builder()
+                        .code(ErrorMessageCodes.MALFORMED_REQUEST_BODY)
+                        .message("Malformed request body.")
+                        .build()));
+    }
 
     @AfterEach
     void tearDown() {
         userRepository.deleteAll();
+        errorMessageRepository.findByCode(ErrorMessageCodes.MALFORMED_REQUEST_BODY)
+                .ifPresent(document -> {
+                    document.setMessage("Malformed request body.");
+                    errorMessageRepository.save(document);
+                });
     }
 
     @Test
@@ -33,6 +52,7 @@ class ErrorResponseIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.error").value("Unauthorized"))
+                .andExpect(jsonPath("$.code").value(ErrorMessageCodes.AUTHENTICATION_REQUIRED))
                 .andExpect(jsonPath("$.message").isNotEmpty())
                 .andExpect(jsonPath("$.path").value("/api/cart"));
     }
@@ -44,8 +64,25 @@ class ErrorResponseIT extends AbstractIntegrationTest {
                         .content("{not-json}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value(ErrorMessageCodes.MALFORMED_REQUEST_BODY))
                 .andExpect(jsonPath("$.message").value("Malformed request body."))
                 .andExpect(jsonPath("$.path").value("/api/auth/register"));
+    }
+
+    @Test
+    void malformedJson_returnsMessageStoredInMongoDb() throws Exception {
+        ErrorMessageDocument document = errorMessageRepository
+                .findByCode(ErrorMessageCodes.MALFORMED_REQUEST_BODY)
+                .orElseThrow();
+        document.setMessage("Message read from MongoDB.");
+        errorMessageRepository.save(document);
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{not-json}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ErrorMessageCodes.MALFORMED_REQUEST_BODY))
+                .andExpect(jsonPath("$.message").value("Message read from MongoDB."));
     }
 
     @Test
