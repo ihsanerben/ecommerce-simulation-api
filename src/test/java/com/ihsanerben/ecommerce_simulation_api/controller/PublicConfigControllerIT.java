@@ -18,7 +18,8 @@ class PublicConfigControllerIT extends AbstractIntegrationTest {
     void getConfig_withoutAuthentication_returnsUiConfig() throws Exception {
         mockMvc.perform(get("/api/public/config"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.logoUrl").value(""))
+                .andExpect(jsonPath("$.logoUrl")
+                        .value("https://www.yerkoygazetesi.com.tr/wp-content/uploads/2024/11/n11.webp"))
                 .andExpect(jsonPath("$.primaryColor").value("#f24391"))
                 .andExpect(jsonPath("$.supportUrl").value("https://www.n11.com/destek-merkezi"));
     }
