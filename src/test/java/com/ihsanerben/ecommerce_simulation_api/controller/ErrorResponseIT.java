@@ -2,11 +2,11 @@ package com.ihsanerben.ecommerce_simulation_api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ihsanerben.ecommerce_simulation_api.AbstractIntegrationTest;
-import com.ihsanerben.ecommerce_simulation_api.dto.request.RegisterRequest;
+import com.ihsanerben.ecommerce_simulation_api.auth.dto.request.RegisterRequest;
 import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes;
 import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageDocument;
 import com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageRepository;
-import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
+import com.ihsanerben.ecommerce_simulation_api.auth.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

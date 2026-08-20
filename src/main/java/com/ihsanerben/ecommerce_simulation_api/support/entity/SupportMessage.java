@@ -1,6 +1,6 @@
 package com.ihsanerben.ecommerce_simulation_api.support.entity;
 
-import com.ihsanerben.ecommerce_simulation_api.entity.User;
+import com.ihsanerben.ecommerce_simulation_api.auth.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

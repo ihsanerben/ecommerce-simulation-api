@@ -1,5 +1,6 @@
 package com.ihsanerben.ecommerce_simulation_api.repository;
 
+import com.ihsanerben.ecommerce_simulation_api.settings.repository.ApplicationConfigRepository;
 import com.ihsanerben.ecommerce_simulation_api.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

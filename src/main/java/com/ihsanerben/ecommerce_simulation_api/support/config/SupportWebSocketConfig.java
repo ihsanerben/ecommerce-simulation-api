@@ -1,7 +1,7 @@
 package com.ihsanerben.ecommerce_simulation_api.support.config;
 
-import com.ihsanerben.ecommerce_simulation_api.config.ApplicationConfigKeys;
-import com.ihsanerben.ecommerce_simulation_api.service.ApplicationConfigService;
+import com.ihsanerben.ecommerce_simulation_api.settings.ApplicationConfigKeys;
+import com.ihsanerben.ecommerce_simulation_api.settings.service.ApplicationConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
