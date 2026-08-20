@@ -1,0 +1,205 @@
+package com.ihsanerben.ecommerce_simulation_api.order.service;
+
+import com.ihsanerben.ecommerce_simulation_api.config.CacheNames;
+import com.ihsanerben.ecommerce_simulation_api.order.dto.response.OrderResponse;
+import com.ihsanerben.ecommerce_simulation_api.cart.entity.Cart;
+import com.ihsanerben.ecommerce_simulation_api.cart.entity.CartItem;
+import com.ihsanerben.ecommerce_simulation_api.order.entity.Order;
+import com.ihsanerben.ecommerce_simulation_api.order.entity.OrderItem;
+import com.ihsanerben.ecommerce_simulation_api.order.entity.OrderStatus;
+import com.ihsanerben.ecommerce_simulation_api.catalog.entity.Product;
+import com.ihsanerben.ecommerce_simulation_api.auth.entity.User;
+import com.ihsanerben.ecommerce_simulation_api.exception.EmptyCartException;
+import com.ihsanerben.ecommerce_simulation_api.exception.InsufficientStockException;
+import com.ihsanerben.ecommerce_simulation_api.exception.InvalidOrderStateException;
+import com.ihsanerben.ecommerce_simulation_api.exception.ResourceNotFoundException;
+import com.ihsanerben.ecommerce_simulation_api.order.mapper.OrderMapper;
+import com.ihsanerben.ecommerce_simulation_api.order.messaging.event.OrderCreatedEvent;
+import com.ihsanerben.ecommerce_simulation_api.order.messaging.event.OrderApprovedEvent;
+import com.ihsanerben.ecommerce_simulation_api.order.messaging.event.OrderCancelledEvent;
+import com.ihsanerben.ecommerce_simulation_api.order.messaging.event.OrderItemSnapshot;
+import com.ihsanerben.ecommerce_simulation_api.cart.repository.CartRepository;
+import com.ihsanerben.ecommerce_simulation_api.order.repository.OrderRepository;
+import com.ihsanerben.ecommerce_simulation_api.auth.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+@Slf4j
+public class OrderService {
+
+    private final OrderRepository orderRepository;
+    private final CartRepository cartRepository;
+    private final UserRepository userRepository;
+    private final OrderMapper orderMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_BY_ID, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_SEARCH, allEntries = true)
+    })
+    public OrderResponse checkout(Long userId) {
+        Cart cart = cartRepository.findByUserId(userId).orElse(null);
+        if (cart == null || cart.getCartItems().isEmpty()) {
+            throw new EmptyCartException("Cart is empty, cannot checkout.");
+        }
+
+        // Fail fast: validate every line's stock BEFORE mutating anything,
+        // so a single insufficient-stock item can never leave a partial order behind.
+        for (CartItem cartItem : cart.getCartItems()) {
+            ensureSufficientStock(cartItem.getProduct(), cartItem.getQuantity());
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        Order order = Order.builder()
+                .user(user)
+                .status(OrderStatus.PENDING)
+                .approved(false)
+                .totalAmount(BigDecimal.ZERO)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (CartItem cartItem : cart.getCartItems()) {
+            Product product = cartItem.getProduct();
+
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .product(product)
+                    .quantity(cartItem.getQuantity())
+                    .unitPrice(product.getPrice())
+                    .build();
+            order.getOrderItems().add(orderItem);
+
+            totalAmount = totalAmount.add(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+            product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
+        }
+        order.setTotalAmount(totalAmount);
+
+        orderRepository.save(order);
+        cart.getCartItems().clear();
+
+        log.info("event=order_created orderId={} userId={} itemCount={}", order.getId(), userId, order.getOrderItems().size());
+
+        applicationEventPublisher.publishEvent(new OrderCreatedEvent(
+                UUID.randomUUID(),
+                order.getId(),
+                userId,
+                user.getEmail(),
+                order.getTotalAmount(),
+                order.getOrderItems().size(),
+                order.getOrderItems().stream()
+                        .map(item -> new OrderItemSnapshot(
+                                item.getProduct().getId(),
+                                item.getProduct().getName(),
+                                item.getQuantity(),
+                                item.getUnitPrice(),
+                                item.getProduct().getStockQuantity()))
+                        .toList(),
+                Instant.now()
+        ));
+
+        return orderMapper.toResponse(order);
+    }
+
+    public List<OrderResponse> getOrders(Long userId) {
+        return orderRepository.findAllByUserId(userId).stream()
+                .map(orderMapper::toResponse)
+                .toList();
+    }
+
+    public OrderResponse getOrderById(Long userId, Long orderId) {
+        return orderMapper.toResponse(findOwnedOrderOrThrow(userId, orderId));
+    }
+
+    @Transactional
+    public OrderResponse updateStatus(Long orderId, OrderStatus newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        order.setStatus(newStatus);
+        return orderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse approveOrder(Long userId, Long orderId) {
+        Order order = findOwnedOrderOrThrow(userId, orderId);
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new InvalidOrderStateException("A cancelled order cannot be approved.");
+        }
+
+        if (order.isApproved()) {
+            return orderMapper.toResponse(order);
+        }
+
+        order.setApproved(true);
+        applicationEventPublisher.publishEvent(new OrderApprovedEvent(
+                UUID.randomUUID(),
+                order.getId(),
+                order.getUser().getId(),
+                order.getUser().getEmail(),
+                Instant.now()
+        ));
+        return orderMapper.toResponse(order);
+    }
+
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_BY_ID, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.PRODUCT_SEARCH, allEntries = true)
+    })
+    public OrderResponse cancelOrder(Long userId, Long orderId) {
+        Order order = findOwnedOrderOrThrow(userId, orderId);
+
+        if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.DELIVERED) {
+            throw new InvalidOrderStateException(
+                    "Order in status '%s' cannot be cancelled.".formatted(order.getStatus()));
+        }
+
+        for (OrderItem item : order.getOrderItems()) {
+            Product product = item.getProduct();
+            product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        applicationEventPublisher.publishEvent(new OrderCancelledEvent(
+                UUID.randomUUID(),
+                order.getId(),
+                order.getUser().getId(),
+                order.getUser().getEmail(),
+                Instant.now()
+        ));
+        return orderMapper.toResponse(order);
+    }
+
+    private Order findOwnedOrderOrThrow(Long userId, Long orderId) {
+        return orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+    }
+
+    private void ensureSufficientStock(Product product, int requestedQuantity) {
+        if (product.getStockQuantity() < requestedQuantity) {
+            log.warn("event=insufficient_stock productId={} requested={} available={}",
+                    product.getId(), requestedQuantity, product.getStockQuantity());
+            throw new InsufficientStockException(
+                    "Insufficient stock for product '%s': requested %d, available %d"
+                            .formatted(product.getName(), requestedQuantity, product.getStockQuantity()));
+        }
+    }
+}

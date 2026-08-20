@@ -2,7 +2,7 @@ package com.ihsanerben.ecommerce_simulation_api.chatbot.service;
 
 import com.ihsanerben.ecommerce_simulation_api.chatbot.dto.ChatbotResponse;
 import com.ihsanerben.ecommerce_simulation_api.chatbot.dto.ChatbotReply;
-import com.ihsanerben.ecommerce_simulation_api.messaging.event.ChatbotInteractionEvent;
+import com.ihsanerben.ecommerce_simulation_api.chatbot.messaging.ChatbotInteractionEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;

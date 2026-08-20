@@ -60,7 +60,7 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: com.ihsanerben.ecommerce_simulation_api.messaging.event
+        spring.json.trusted.packages: com.ihsanerben.ecommerce_simulation_api.order.messaging.event,com.ihsanerben.ecommerce_simulation_api.chatbot.messaging
     listener:
       missing-topics-fatal: false
 

@@ -1,7 +1,7 @@
 package com.ihsanerben.ecommerce_simulation_api;
 
 import com.ihsanerben.ecommerce_simulation_api.config.TestcontainersConfiguration;
-import com.ihsanerben.ecommerce_simulation_api.repository.RateLimitEntryRepository;
+import com.ihsanerben.ecommerce_simulation_api.auth.ratelimit.repository.RateLimitEntryRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;

@@ -1,8 +1,8 @@
 package com.ihsanerben.ecommerce_simulation_api.support.service;
 
-import com.ihsanerben.ecommerce_simulation_api.entity.User;
+import com.ihsanerben.ecommerce_simulation_api.auth.entity.User;
 import com.ihsanerben.ecommerce_simulation_api.exception.ResourceNotFoundException;
-import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
+import com.ihsanerben.ecommerce_simulation_api.auth.repository.UserRepository;
 import com.ihsanerben.ecommerce_simulation_api.support.dto.SupportConversationResponse;
 import com.ihsanerben.ecommerce_simulation_api.support.entity.SupportConversation;
 import com.ihsanerben.ecommerce_simulation_api.support.entity.SupportConversationStatus;

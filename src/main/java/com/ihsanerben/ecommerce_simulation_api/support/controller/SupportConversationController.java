@@ -1,6 +1,6 @@
 package com.ihsanerben.ecommerce_simulation_api.support.controller;
 
-import com.ihsanerben.ecommerce_simulation_api.security.UserPrincipal;
+import com.ihsanerben.ecommerce_simulation_api.auth.security.UserPrincipal;
 import com.ihsanerben.ecommerce_simulation_api.support.dto.CreateSupportConversationRequest;
 import com.ihsanerben.ecommerce_simulation_api.support.dto.SupportConversationResponse;
 import com.ihsanerben.ecommerce_simulation_api.support.dto.SupportMessageResponse;

@@ -2,9 +2,9 @@ package com.ihsanerben.ecommerce_simulation_api.support.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ihsanerben.ecommerce_simulation_api.AbstractIntegrationTest;
-import com.ihsanerben.ecommerce_simulation_api.dto.request.RegisterRequest;
-import com.ihsanerben.ecommerce_simulation_api.repository.UserRepository;
-import com.ihsanerben.ecommerce_simulation_api.security.TokenCookieService;
+import com.ihsanerben.ecommerce_simulation_api.auth.dto.request.RegisterRequest;
+import com.ihsanerben.ecommerce_simulation_api.auth.repository.UserRepository;
+import com.ihsanerben.ecommerce_simulation_api.auth.security.TokenCookieService;
 import com.ihsanerben.ecommerce_simulation_api.support.dto.CreateSupportConversationRequest;
 import com.ihsanerben.ecommerce_simulation_api.support.repository.SupportConversationRepository;
 import com.ihsanerben.ecommerce_simulation_api.support.repository.SupportMessageRepository;
