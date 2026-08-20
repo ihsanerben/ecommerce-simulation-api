@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import com.ihsanerben.ecommerce_simulation_api.support.exception.ConversationAlreadyAssignedException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +58,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidOrderStateException.class)
     public ResponseEntity<ErrorResponse> handleInvalidOrderState(InvalidOrderStateException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.CONFLICT, ErrorMessageCodes.INVALID_ORDER_STATE, request);
+    }
+
+    @ExceptionHandler(ConversationAlreadyAssignedException.class)
+    public ResponseEntity<ErrorResponse> handleConversationAlreadyAssigned(
+            ConversationAlreadyAssignedException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ErrorMessageCodes.CONVERSATION_ALREADY_ASSIGNED, request);
     }
 
     @ExceptionHandler(InvalidTokenException.class)

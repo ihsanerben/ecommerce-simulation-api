@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/changes/009-chatbot-interactions.yaml
   - include:
       file: db/changelog/changes/010-seed-ui-configs.yaml
+  - include:
+      file: db/changelog/changes/011-support-messaging.yaml
