@@ -6,6 +6,7 @@ import static com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMes
 import static com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes.AUTHENTICATION_REQUIRED;
 import static com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes.BAD_CREDENTIALS;
 import static com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes.CONVERSATION_ALREADY_ASSIGNED;
+import static com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes.SUPPORT_CONVERSATION_NOT_OPEN;
 import static com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes.CSRF_TOKEN_INVALID;
 import static com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes.DATA_INTEGRITY_VIOLATION;
 import static com.ihsanerben.ecommerce_simulation_api.exception.message.ErrorMessageCodes.DUPLICATE_RESOURCE;
@@ -37,6 +38,8 @@ public final class DefaultErrorMessages {
             message(INVALID_ORDER_STATE, "The order is not in a valid state for this operation."),
             message(CONVERSATION_ALREADY_ASSIGNED,
                     "This support conversation is already assigned to another agent."),
+            message(SUPPORT_CONVERSATION_NOT_OPEN,
+                    "A support agent must be assigned before messages can be sent."),
             message(INVALID_TOKEN, "The token is invalid or expired."),
             message(PASSWORD_REUSE, "The new password cannot be a recently used password."),
             message(RATE_LIMIT_EXCEEDED, "Too many requests. Please try again later."),
