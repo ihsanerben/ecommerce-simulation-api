@@ -26,6 +26,7 @@ public final class ErrorMessageCodes {
     public static final String AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED";
     public static final String CSRF_TOKEN_INVALID = "CSRF_TOKEN_INVALID";
     public static final String CONVERSATION_ALREADY_ASSIGNED = "CONVERSATION_ALREADY_ASSIGNED";
+    public static final String SUPPORT_CONVERSATION_NOT_OPEN = "SUPPORT_CONVERSATION_NOT_OPEN";
 
     private ErrorMessageCodes() {
     }

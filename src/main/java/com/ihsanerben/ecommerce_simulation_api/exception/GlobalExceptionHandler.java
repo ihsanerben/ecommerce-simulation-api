@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import com.ihsanerben.ecommerce_simulation_api.support.exception.ConversationAlreadyAssignedException;
+import com.ihsanerben.ecommerce_simulation_api.support.exception.SupportConversationNotOpenException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -64,6 +65,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConversationAlreadyAssigned(
             ConversationAlreadyAssignedException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.CONFLICT, ErrorMessageCodes.CONVERSATION_ALREADY_ASSIGNED, request);
+    }
+
+    @ExceptionHandler(SupportConversationNotOpenException.class)
+    public ResponseEntity<ErrorResponse> handleSupportConversationNotOpen(
+            SupportConversationNotOpenException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ErrorMessageCodes.SUPPORT_CONVERSATION_NOT_OPEN, request);
     }
 
     @ExceptionHandler(InvalidTokenException.class)

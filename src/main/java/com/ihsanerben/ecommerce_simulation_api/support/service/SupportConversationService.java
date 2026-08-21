@@ -12,6 +12,7 @@ import com.ihsanerben.ecommerce_simulation_api.support.dto.SupportMessageRespons
 import com.ihsanerben.ecommerce_simulation_api.support.entity.SupportConversation;
 import com.ihsanerben.ecommerce_simulation_api.support.entity.SupportConversationStatus;
 import com.ihsanerben.ecommerce_simulation_api.support.exception.ConversationAlreadyAssignedException;
+import com.ihsanerben.ecommerce_simulation_api.support.exception.SupportConversationNotOpenException;
 import com.ihsanerben.ecommerce_simulation_api.support.entity.SupportMessage;
 import com.ihsanerben.ecommerce_simulation_api.support.mapper.SupportMapper;
 import com.ihsanerben.ecommerce_simulation_api.support.repository.SupportConversationRepository;
@@ -85,6 +86,9 @@ public class SupportConversationService {
         User sender = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         SupportConversation conversation = accessibleConversation(sender.getId(), sender.getRole(), request.conversationId());
+        if (conversation.getAgent() == null || conversation.getStatus() != SupportConversationStatus.OPEN) {
+            throw new SupportConversationNotOpenException();
+        }
         SupportMessage message = SupportMessage.builder()
                 .conversation(conversation)
                 .sender(sender)
