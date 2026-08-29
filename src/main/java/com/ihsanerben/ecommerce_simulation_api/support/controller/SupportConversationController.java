@@ -3,7 +3,7 @@ package com.ihsanerben.ecommerce_simulation_api.support.controller;
 import com.ihsanerben.ecommerce_simulation_api.auth.security.UserPrincipal;
 import com.ihsanerben.ecommerce_simulation_api.support.dto.CreateSupportConversationRequest;
 import com.ihsanerben.ecommerce_simulation_api.support.dto.SupportConversationResponse;
-import com.ihsanerben.ecommerce_simulation_api.support.dto.SupportMessageResponse;
+import com.ihsanerben.ecommerce_simulation_api.support.messaging.SupportEventPublisher;
 import com.ihsanerben.ecommerce_simulation_api.support.service.SupportConversationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class SupportConversationController {
     private final SupportConversationService service;
+    private final SupportEventPublisher eventPublisher;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -34,7 +35,9 @@ public class SupportConversationController {
     public SupportConversationResponse create(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateSupportConversationRequest request) {
-        return service.create(principal.getId(), request);
+        SupportConversationResponse conversation = service.create(principal.getId(), request);
+        eventPublisher.conversationCreated(conversation);
+        return conversation;
     }
 
     @GetMapping
@@ -49,7 +52,9 @@ public class SupportConversationController {
     public SupportConversationResponse assign(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long conversationId) {
-        return service.assign(conversationId, principal.getId());
+        SupportConversationResponse conversation = service.assign(conversationId, principal.getId());
+        eventPublisher.conversationAssigned(conversation);
+        return conversation;
     }
 
     @PutMapping("/{conversationId}/close")
@@ -57,15 +62,9 @@ public class SupportConversationController {
     public SupportConversationResponse close(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long conversationId) {
-        return service.close(conversationId, principal.getId());
+        SupportConversationResponse conversation = service.close(conversationId, principal.getId());
+        eventPublisher.conversationClosed(conversation);
+        return conversation;
     }
 
-    @GetMapping("/{conversationId}/messages")
-    public PagedModel<SupportMessageResponse> messages(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long conversationId,
-            @PageableDefault(size = 30, sort = "sentAt") Pageable pageable) {
-        return new PagedModel<>(service.messages(
-                principal.getId(), principal.getRole(), conversationId, pageable));
-    }
 }
